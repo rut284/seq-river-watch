@@ -1,0 +1,31 @@
+# Downloads catchment boundaries (Queensland drainage sub-basins and Brisbane City Council
+# creek catchments), simplifies them, and commits site/geo/catchments.json for the map overlay.
+name: Refresh catchment boundaries
+
+on:
+  schedule:
+    - cron: "41 2 3 * *"   # monthly
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  catchments:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download and simplify boundaries
+        run: python tools/fetch_catchments.py site/geo/catchments.json
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/geo/catchments.json
+          if git diff --cached --quiet; then echo "No change"; exit 0; fi
+          git commit -m "Refresh catchment boundaries"
+          git push
