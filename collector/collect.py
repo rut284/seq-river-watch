@@ -64,6 +64,17 @@ COUNCIL_LOCATIONS = [
      "telemetry-sensors-rainfall-and-stream-heights-metadata/records?limit=100&offset={offset}"),
 ]
 COUNCIL_REFRESH = timedelta(hours=24)
+
+# BoM weather radar images (anonymous FTP; see BoM's "Radar Images" user guide). Each image is a
+# transparent PNG of rain echoes; its position comes from the matching IDRnnnx.map coordinates file.
+RADAR_DIR = "/anon/gen/radar"
+RADAR_COORDS_DIR = "/anon/gen/radar_transparencies/coordinates"
+RADARS = [
+    {"id": "IDR662", "label": "Mt Stapylton, 256 km", "site": [-27.7178, 153.2400]},
+    {"id": "IDR503", "label": "Marburg, 128 km", "site": [-27.6080, 152.5390]},
+]
+RADAR_FRAMES = 8            # BoM issues a frame about every 5-6 minutes: ~40 minutes of loop
+RADAR_MAP_REFRESH = timedelta(days=30)
 SEQ_BOX = (-28.6, -26.3, 151.4, 153.8)  # lat min, lat max, lon min, lon max
 
 
@@ -119,12 +130,15 @@ class FtpSource:
         names = self.ftp.nlst(sub) if sub else self.ftp.nlst()
         return [n.rsplit("/", 1)[-1] for n in names]
 
-    def get(self, name: str) -> str:
+    def get_bytes(self, name: str) -> bytes:
         buf = io.BytesIO()
         self.ftp.retrbinary(f"RETR {name}", buf.write)
         if self.pause:
             time.sleep(self.pause)
-        return decode(buf.getvalue())
+        return buf.getvalue()
+
+    def get(self, name: str) -> str:
+        return decode(self.get_bytes(name))
 
 
 class DirSource:
@@ -145,11 +159,14 @@ class DirSource:
             raise ftplib.error_perm(f"550 {sub}: No such directory")
         return sorted(p.name for p in folder.iterdir())
 
-    def get(self, name: str) -> str:
+    def get_bytes(self, name: str) -> bytes:
         path = self.root / name
         if not path.is_file():
             raise ftplib.error_perm(f"550 {name}: No such file")
-        return decode(path.read_bytes())
+        return path.read_bytes()
+
+    def get(self, name: str) -> str:
+        return decode(self.get_bytes(name))
 
 
 def latest_named(names: list[str], prefix: str) -> str | None:
@@ -211,6 +228,122 @@ def fetch_council_locations(get=http_json) -> dict[str, dict]:
 def minute_rounded(lat, lon) -> bool:
     """True when a position sits exactly on whole arc-minutes, i.e. it was rounded (up to ~1 km out)."""
     return all(abs(v * 60 - round(v * 60)) < 0.006 for v in (lat, lon))
+
+
+# ---------------------------------------------------------------- radar
+
+def parse_radar_map(text: str) -> list | None:
+    """Image bounds [[south, west], [north, east]] from a BoM IDRnnnx.map coordinates file.
+
+    Reads labelled edges (North/South/East/West, or Top/Bottom/Left/Right latitude/longitude)
+    when present; otherwise the corner latitudes and longitudes listed in the file.
+    """
+    flat = " ".join(text.split())
+    num = r"(-?\d+(?:\.\d+)?)"
+    edges = {}
+    for key, names in (("n", "north|top"), ("s", "south|bottom"), ("e", "east|right"), ("w", "west|left")):
+        m = re.search(rf"(?:{names})\w*\s*(?:lat\w*|lon\w*)?\s*[:=]?\s*{num}", flat, re.I)
+        if m:
+            edges[key] = float(m.group(1))
+    if len(edges) == 4:
+        s, n, w, e = edges["s"], edges["n"], edges["w"], edges["e"]
+        if s > n:
+            s, n = n, s
+        if w > e:
+            w, e = e, w
+        if -45 < s < n < -8 and 105 < w < e < 160:
+            return [[s, w], [n, e]]
+    lats = sorted({float(x) for x in re.findall(r"-\d{1,2}\.\d+", flat) if -45 < float(x) < -8})
+    lons = sorted({float(x) for x in re.findall(r"(?<![\d.-])1[0-5]\d\.\d+", flat) if 105 < float(x) < 160})
+    if len(lats) >= 2 and len(lons) >= 2:
+        return [[lats[0], lons[0]], [lats[-1], lons[-1]]]
+    return None
+
+
+def png_palette(data: bytes) -> list[str]:
+    """Opaque colours of an indexed PNG's palette, in palette order (BoM orders them by rain rate)."""
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        return []
+    pos, plte, trns = 8, b"", b""
+    while pos + 8 <= len(data):
+        length = int.from_bytes(data[pos:pos + 4], "big")
+        kind = data[pos + 4:pos + 8]
+        body = data[pos + 8:pos + 8 + length]
+        if kind == b"PLTE":
+            plte = body
+        elif kind == b"tRNS":
+            trns = body
+        elif kind == b"IEND":
+            break
+        pos += 12 + length
+    colours = []
+    for i in range(len(plte) // 3):
+        alpha = trns[i] if i < len(trns) else 255
+        if alpha < 128:
+            continue
+        colours.append("#%02x%02x%02x" % tuple(plte[i * 3:i * 3 + 3]))
+    return colours
+
+
+def collect_radar(site_dir: Path, meta: dict, now: datetime, radar_source, coords_source) -> dict:
+    """Download the latest radar frames and publish data/radar.json. Never fails the run."""
+    status = {"ok": False, "radars": []}
+    if radar_source is None:
+        return status
+    frames_dir = site_dir / "radar"
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    maps = meta.setdefault("radarMaps", {})
+    manifest = {"generated": now.astimezone(bp.AEST).isoformat(), "radars": []}
+    keep: set[str] = set()
+    try:
+        with radar_source as rs:
+            names = rs.list()
+            for radar in RADARS:
+                rid = radar["id"]
+                frames = sorted(n for n in names if re.fullmatch(rf"{rid}\.T\.\d{{12}}\.png", n))[-RADAR_FRAMES:]
+                got = []
+                palette: list[str] = []
+                for name in frames:
+                    try:
+                        data = rs.get_bytes(name)
+                    except (OSError, EOFError, ftplib.Error) as exc:
+                        log(f"radar {name}: {exc}")
+                        continue
+                    (frames_dir / name).write_bytes(data)
+                    keep.add(name)
+                    stamp = datetime.strptime(name.split(".")[2], "%Y%m%d%H%M").replace(tzinfo=timezone.utc)
+                    got.append({"time": stamp.astimezone(bp.AEST).isoformat(), "url": f"radar/{name}"})
+                    palette = png_palette(data) or palette
+                entry = maps.get(rid, {})
+                checked = iso_to_min(entry.get("checked"))
+                if coords_source is not None and (entry.get("bounds") is None or checked is None
+                                                  or bp.epoch_minutes(now) - checked >= RADAR_MAP_REFRESH.total_seconds() / 60):
+                    try:
+                        with coords_source as cs:
+                            text = cs.get(f"{rid}.map")
+                        entry = {"checked": now.isoformat(), "bounds": parse_radar_map(text), "sample": text[:600]}
+                        maps[rid] = entry
+                        annotate("notice" if entry["bounds"] else "warning", f"Radar coordinates {rid}.map",
+                                 f"bounds {entry['bounds']}; file starts: {text[:400]}")
+                    except (OSError, EOFError, ftplib.Error) as exc:
+                        annotate("warning", f"Radar coordinates {rid}.map", str(exc))
+                manifest["radars"].append({
+                    "id": rid, "label": radar["label"], "site": radar["site"], "bounds": entry.get("bounds"),
+                    "frames": got, "palette": palette,
+                })
+                status["radars"].append({"id": rid, "frames": len(got), "bounds": entry.get("bounds") is not None})
+    except (OSError, EOFError, ftplib.Error) as exc:
+        annotate("warning", "Radar not updated", str(exc))
+        log(f"radar: {exc}")
+        return status
+    for old in frames_dir.glob("IDR*.png"):
+        if old.name not in keep:
+            old.unlink()
+    status["ok"] = any(r["frames"] and r["bounds"] for r in manifest["radars"])
+    write_json(site_dir / "data" / "radar.json", manifest)
+    annotate("notice", "Radar", "; ".join(f"{r['id']}: {r['frames']} frames, position {'known' if r['bounds'] else 'UNKNOWN'}"
+                                       for r in status["radars"]) or "no radar files listed")
+    return status
 
 
 def load_previous(base: str | None) -> tuple[dict, dict]:
@@ -290,7 +423,7 @@ def sparkline(points: list[list], now_min: int, hours: int = 24, step: int = 30)
 # ---------------------------------------------------------------- the run
 
 def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_path: Path,
-        council_fetcher=fetch_council_locations) -> int:
+        council_fetcher=fetch_council_locations, radar_source=None, coords_source=None) -> int:
     now_min = bp.epoch_minutes(now)
     catalogue = json.loads(catalogue_path.read_text(encoding="utf-8"))
     series_prev, meta = load_previous(previous)
@@ -623,6 +756,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
     meta["stations"] = meta_st
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    status["radar"] = collect_radar(out_dir.parent, meta, now, radar_source, coords_source)
     latest = {
         "generated": now.astimezone(bp.AEST).isoformat(),
         "demo": False,
@@ -691,7 +825,14 @@ def main(argv=None) -> int:
         if args.council_file:
             fixed = json.loads(Path(args.council_file).read_text(encoding="utf-8"))
             fetcher = lambda: (fixed, [])  # noqa: E731
-        return run(source, args.previous, Path(args.out), now, Path(args.catalogue), council_fetcher=fetcher)
+        if args.feed_dir:
+            radar_dir, coords_dir = Path(args.feed_dir) / "radar", Path(args.feed_dir) / "radar_coords"
+            radar_source = DirSource(str(radar_dir)) if radar_dir.is_dir() else None
+            coords_source = DirSource(str(coords_dir)) if coords_dir.is_dir() else None
+        else:
+            radar_source, coords_source = FtpSource(directory=RADAR_DIR), FtpSource(directory=RADAR_COORDS_DIR)
+        return run(source, args.previous, Path(args.out), now, Path(args.catalogue), council_fetcher=fetcher,
+                   radar_source=radar_source, coords_source=coords_source)
     except (OSError, EOFError, ftplib.Error) as exc:
         log(f"could not reach the BoM feed: {exc}")
         return 2

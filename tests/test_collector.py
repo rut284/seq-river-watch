@@ -35,6 +35,18 @@ def hcs(rows):
     return head + body
 
 
+def tiny_png():
+    """A 1x1 indexed PNG: palette entry 0 transparent, 1 and 2 opaque (like BoM radar frames)."""
+    import struct
+    import zlib
+
+    def chunk(kind, body):
+        return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", zlib.crc32(kind + body) & 0xFFFFFFFF)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 3, 0, 0, 0))
+            + chunk(b"PLTE", bytes([0, 0, 0, 245, 245, 255, 180, 180, 255])) + chunk(b"tRNS", bytes([0, 255, 255]))
+            + chunk(b"IDAT", zlib.compress(b"\x00\x01")) + chunk(b"IEND", b""))
+
+
 def map_page(entries):
     areas = []
     for name, sid, lat, lon, level, klass, trend, stamp, mi, mo, ma in entries:
@@ -246,6 +258,33 @@ class CollectorRunTests(unittest.TestCase):
                            ROOT / "collector" / "stations.json", council_fetcher=broken)
         self.assertEqual(code, 0)
         self.assertEqual({s["id"]: s for s in self.load("latest.json")["stations"]}["540118"]["coordAccuracy"], "bom")
+
+    def test_radar_frames_published(self):
+        radar = self.feed / "radar"
+        coords = self.feed / "radar_coords"
+        radar.mkdir()
+        coords.mkdir()
+        png = tiny_png()
+        for stamp in ("202610220025", "202610220030", "202610220035"):
+            (radar / f"IDR662.T.{stamp}.png").write_bytes(png)
+        (radar / "IDR662.gif").write_bytes(b"GIF89a")
+        (coords / "IDR662.map").write_text("North: -25.4 South: -30.0\nEast: 155.8 West: 150.6\n")
+        self.assertEqual(self.run_collector(), 0)
+        manifest = json.loads((self.out.parent / "data" / "radar.json").read_text())
+        r = {x["id"]: x for x in manifest["radars"]}["IDR662"]
+        self.assertEqual(r["bounds"], [[-30.0, 150.6], [-25.4, 155.8]])
+        self.assertEqual([f["url"] for f in r["frames"]][-1], "radar/IDR662.T.202610220035.png")
+        self.assertEqual(r["frames"][-1]["time"], "2026-10-22T10:35:00+10:00")
+        self.assertEqual(r["palette"], ["#f5f5ff", "#b4b4ff"])
+        self.assertTrue((self.out.parent / "radar" / "IDR662.T.202610220035.png").is_file())
+        self.assertTrue(self.load("latest.json")["sources"]["radar"]["ok"])
+
+    def test_radar_map_formats(self):
+        self.assertEqual(collect.parse_radar_map("Top lat: -25.42 Bottom lat: -30.03 Left lon: 150.67 Right lon: 155.81"),
+                         [[-30.03, 150.67], [-25.42, 155.81]])
+        self.assertEqual(collect.parse_radar_map("IDR662\n150.6700 -25.4200\n155.8100 -30.0300\n"),
+                         [[-30.03, 150.67], [-25.42, 155.81]])
+        self.assertIsNone(collect.parse_radar_map("no coordinates here"))
 
     def test_over_real_ftp(self):
         try:
