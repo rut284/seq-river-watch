@@ -596,6 +596,12 @@ function initMap() {
     $("#map").dataset.zoom = z < 9.5 ? "out" : z < 11 ? "mid" : "in";
   };
   map.on("zoomend", () => { zoomState(); requestAnimationFrame(declutterLabels); });
+  ["mousedown", "touchstart", "wheel", "keydown"].forEach((ev) =>
+    map.getContainer().addEventListener(ev, () => { S.userMoved = true; }, { passive: true }));
+  new ResizeObserver(() => {
+    map.invalidateSize({ pan: false });
+    if (S.latest && !S.userMoved && !S.selected) fitVisible();
+  }).observe(map.getContainer());
   zoomState();
   $("#fit").addEventListener("click", () => fitVisible());
   setOutlineAttribution(true);
@@ -693,7 +699,7 @@ async function setBasemap(key) {
       });
     } else if (bm.kind === "vector") {
       if (!L.maplibreGL) for (const src of MAPLIBRE_SCRIPTS) await loadScript(src);
-      layer = L.maplibreGL({ style: bm.style, attribution: bm.attribution, className: "rw-tiles rw-tiles-streets", interactive: false });
+      layer = L.maplibreGL({ style: bm.style, attributionControl: { customAttribution: bm.attribution }, className: "rw-tiles rw-tiles-streets", interactive: false });
     }
     if (S.baseLayer) S.map.removeLayer(S.baseLayer);
     S.baseLayer = layer;
@@ -1267,6 +1273,7 @@ async function boot() {
     return;
   }
   renderAll();
+  S.map.invalidateSize({ pan: false });
   fitVisible();
   $("#q").addEventListener("input", (e) => { S.q = lower(e.target.value.trim()); applyFilters(); });
   $("#area").addEventListener("change", (e) => { S.area = e.target.value; applyFilters(); fitVisible(); });
