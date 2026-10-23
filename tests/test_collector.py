@@ -285,6 +285,10 @@ class CollectorRunTests(unittest.TestCase):
         self.assertEqual(collect.parse_radar_map("IDR662\n150.6700 -25.4200\n155.8100 -30.0300\n"),
                          [[-30.03, 150.67], [-25.42, 155.81]])
         self.assertIsNone(collect.parse_radar_map("no coordinates here"))
+        bom = ("IDR503.map\n50 Marburg (128 km)\nprojection = Gnomonic\ncenter_longitude =     152.53900\n"
+               "center_latitude  =     -27.60800\nlon0 =     151.23309\nlat0 =     -28.74816\nlon1 =     151.26024\n"
+               "lat1 =     -26.44776\nlon2 =     153.82970\nlat2 =     -26.44766\nlon3 =     153.85709\nlat3 =     -28.74804\n")
+        self.assertEqual(collect.parse_radar_map(bom), [[-28.7481, 151.24667], [-26.44771, 153.84339]])
 
     def test_over_real_ftp(self):
         try:

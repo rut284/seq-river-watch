@@ -9,6 +9,8 @@ A self-updating website that maps river heights and flood classes for every gaug
   - **Outline**: a simple built-in coastline with each waterway's gauges joined upstream to downstream. Used automatically if the others can't load.
 
   None of these need an account or key. Each option only appears if it loads for the visitor.
+- **Catchments** (map button): the Queensland Government's drainage sub-basins (Stanley, Lockyer, Bremer, Brisbane, North and South Pine, Caboolture) and Brisbane City Council's 58 creek catchments, each shaded by the most serious flood class among its gauges. Pick a gauge to outline the catchments its water passes through on the way to the bay; its panel lists every gauge downstream, in order, including the main river below the junction (for example Lockyer Creek → Brisbane River from Lowood).
+- **Radar** (map button): the last ~40 minutes of BoM weather radar from Mt Stapylton (256 km) or Marburg (128 km), with play and a time slider.
 - **Rivers**: each waterway drawn as a line of gauges from upstream to downstream, with the latest height and how far it is from the next flood level.
 - **Gauge**: a flood gauge board, latest reading, BoM's minor/moderate/major levels, crossing heights, and a 24-hour / 3-day / 7-day hydrograph with a readings table.
 - Updates itself about every 15 minutes, for free, on GitHub. No server, database or API key.
@@ -66,6 +68,10 @@ All data comes from BoM's **public data feed** for automated use, `ftp://ftp.bom
 
 These cover 90 of the 233 gauges. The rest use BoM's position, and each gauge's panel says which source its marker uses and how precise it is.
 
+**Radar.** Each run also reads BoM's anonymous radar feed (`/anon/gen/radar/`, as described in BoM's *Radar Images* user guide): the latest 8 frames of `IDR662` (Mt Stapylton, 256 km) and `IDR503` (Marburg, 128 km). Each image's position comes from its `radar_transparencies/coordinates/IDRnnnx.map` file (Gnomonic corners), checked monthly. The map places the image by the midpoints of its edges, which is within about a kilometre for the 128 km image and a few kilometres at the outer corners of the 256 km image.
+
+**Catchments.** `site/geo/catchments.json` is built by `tools/fetch_catchments.py` and refreshed monthly by the *Refresh catchment boundaries* workflow (run it from the Actions tab at any time). How each sub-basin drains (for example Lockyer Creek into the Brisbane River below Wivenhoe Dam) is set in that script.
+
 Other `IDQ65xxx.html` map pages are scanned at most once a day, and only to find gauges missing from `IDQ65325.html`; any page that supplies gauges is remembered and read on every run.
 
 Each run's results (which files were found, how many gauges got readings, coordinates and flood levels) appear as notes on the run's page under **Actions**.
@@ -81,6 +87,8 @@ The collector keeps going if any single file is missing. Without the bulletin it
 - River heights: © Commonwealth of Australia, Bureau of Meteorology, [CC BY 4.0 AU](https://creativecommons.org/licenses/by/4.0/au/). Most gauge data is supplied to BoM by other agencies, in real time and without quality control, and is subject to those agencies' terms.
 - Gauge positions: Brisbane City Council and City of Moreton Bay gauge registers (open data); otherwise BoM's flood-warning map page and Queensland flood warning river height station catalogue (5 January 2022).
 - Coastline, Brisbane River and Lake Wivenhoe outlines: [Natural Earth](https://www.naturalearthdata.com/) (public domain).
+- Weather radar: © Commonwealth of Australia, Bureau of Meteorology, from BoM's anonymous FTP service; use is subject to BoM's [copyright notice](https://www.bom.gov.au/other/copyright.shtml) and [disclaimer](https://www.bom.gov.au/other/disclaimer.shtml).
+- Catchments: drainage sub-basins © State of Queensland (Department of Resources); creek catchments © Brisbane City Council.
 - Map library: [Leaflet](https://leafletjs.com/) 1.9.4 (BSD-2-Clause); street map drawn with [MapLibre GL JS](https://maplibre.org/) 5.24 through [maplibre-gl-leaflet](https://github.com/maplibre/maplibre-gl-leaflet).
 - Street map: [OpenFreeMap](https://openfreemap.org) © [OpenMapTiles](https://www.openmaptiles.org/), data from [OpenStreetMap](https://www.openstreetmap.org/copyright). Free with no key or usage limit, but no uptime guarantee; the project runs on donations.
 - Topographic map and aerial imagery: © State of Queensland, from the public `QldMap_Topo` and `LatestStateProgram_AllUsers` basemap services on QSpatial. Their catalogue entries don't state a licence, so keep the © State of Queensland credit visible (the map does this automatically).

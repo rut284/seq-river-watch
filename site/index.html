@@ -355,6 +355,54 @@ details.readings summary { cursor: pointer; color: var(--accent); font-size: 13.
 .about dd { margin: 0; }
 .src-ok { color: var(--st-below); font-weight: 600; } .src-bad { color: var(--st-major); font-weight: 600; }
 
+
+/* catchments overlay */
+.rw-catch { fill: var(--ink-3); fill-opacity: 0.04; stroke: var(--ink-2); stroke-opacity: 0.55; stroke-width: 1; }
+.rw-catch.basin { stroke-width: 2; stroke-opacity: 0.75; }
+.rw-catch.c-below { fill: var(--st-below); fill-opacity: 0.07; }
+.rw-catch.c-minor { fill: var(--st-minor); fill-opacity: 0.22; }
+.rw-catch.c-moderate { fill: var(--st-moderate); fill-opacity: 0.26; }
+.rw-catch.c-major { fill: var(--st-major); fill-opacity: 0.3; }
+.rw-catch.path { stroke: var(--accent); stroke-opacity: 1; stroke-width: 3.5; }
+#map[data-zoom="out"] .rw-catch.creek, #map[data-zoom="out"] .rw-catch-label.creek { display: none; }
+#map[data-zoom="mid"] .rw-catch-label.creek:not(.path) { display: none; }
+.rw-catch-label { background: none; border: 0; }
+.rw-catch-label span {
+  display: inline-block; transform: translate(-50%, -50%); white-space: nowrap;
+  font: 600 12px/1 var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2);
+  text-shadow: 0 0 3px var(--panel), 0 0 3px var(--panel), 0 0 4px var(--panel);
+}
+.rw-catch-label.basin span { font-size: 15px; color: var(--ink); }
+.rw-catch-label.path span { color: var(--accent); }
+.rw-marker.ds svg .ring { stroke: var(--accent); stroke-width: 3; }
+.catch-key { width: 18px; height: 12px; flex: none; border: 2px solid var(--ink-2); border-radius: 2px; background: color-mix(in srgb, var(--st-minor) 30%, transparent); }
+.catch-key.path { border-color: var(--accent); background: transparent; }
+ol.flow { list-style: none; margin: 0; padding: 0; display: grid; }
+ol.flow li { position: relative; padding: 4px 0 6px 22px; font-size: 13.5px; }
+ol.flow li::before { content: ""; position: absolute; left: 4px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+ol.flow li:not(:last-child)::after { content: ""; position: absolute; left: 8px; top: 19px; bottom: -5px; width: 2px; background: var(--chain); }
+.flow-via { display: block; color: var(--ink-3); font-size: 12.5px; }
+ol.ds-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.ds-row {
+  width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px; align-items: center;
+  border: 0; background: none; padding: 5px 6px; border-radius: 6px; cursor: pointer; text-align: left; font-size: 13px;
+}
+.ds-row:hover { background: var(--accent-wash); }
+.ds-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* radar overlay */
+.radar-ctl {
+  position: absolute; right: 12px; bottom: 28px; z-index: 500; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 6px 8px; box-shadow: var(--shadow);
+  max-width: calc(100% - 24px);
+}
+.radar-ctl input[type="range"] { width: 120px; accent-color: var(--accent); }
+.radar-time { font-size: 12.5px; color: var(--ink-2); min-width: 7ch; }
+.radar-ctl .tool { box-shadow: none; }
+.radar-ramp { display: flex; height: 10px; border-radius: 3px; overflow: hidden; }
+.radar-ramp span { flex: 1; }
+.radar-ramp-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); }
+
 @media (max-width: 860px) {
   body { display: block; height: auto; }
   .app { display: flex; flex-direction: column; }
@@ -383,9 +431,17 @@ details.readings summary { cursor: pointer; color: var(--accent); font-size: 13.
     <div id="map" role="region" aria-label="Map of river height gauges"></div>
     <div class="map-tools">
       <div class="seg basemaps" id="basemaps" role="group" aria-label="Map style" hidden></div>
+      <button class="tool" id="catch-btn" type="button" aria-pressed="false" hidden>Catchments</button>
+      <button class="tool" id="radar-btn" type="button" aria-pressed="false" hidden>Radar</button>
       <button class="tool" id="fit" type="button">Fit gauges</button>
     </div>
     <p class="map-note" id="map-note" hidden></p>
+    <div class="radar-ctl" id="radar-ctl" hidden>
+      <button class="tool" id="radar-play" type="button" aria-pressed="false">Play</button>
+      <input id="radar-slider" type="range" min="0" max="0" step="1" value="0" aria-label="Radar time">
+      <span class="radar-time num" id="radar-time"></span>
+      <select class="select" id="radar-site" aria-label="Radar"></select>
+    </div>
     <details class="map-legend" id="legend-box" open><summary>Map key</summary><div class="legend-body" id="legend"></div></details>
   </div>
   <section class="panel" aria-label="River details">
@@ -441,6 +497,7 @@ const S = {
   selected: null, view: "rivers", area: "all", q: "", floodOnly: false,
   range: 72, map: null, markers: new Map(), labels: new Map(), chains: [], embedded: null,
   basemap: "outline", available: [], baseLayer: null, basemapBusy: false,
+  catch: null, catchOn: false, catchLayers: [], radarData: null, radarOn: false, radarId: null, radarIdx: 0, radarLayer: null, radarTimer: null,
 };
 
 // ------------------------------------------------------------------ small svg helpers
@@ -582,6 +639,10 @@ function initMap() {
   S.map = map;
   map.createPane("base"); map.getPane("base").style.zIndex = 300;
   map.createPane("chains"); map.getPane("chains").style.zIndex = 410;
+  map.createPane("catchments"); map.getPane("catchments").style.zIndex = 340;
+  map.getPane("catchments").style.pointerEvents = "none";
+  map.createPane("radar"); map.getPane("radar").style.zIndex = 380;
+  map.getPane("radar").style.pointerEvents = "none";
   map.createPane("labels"); map.getPane("labels").style.zIndex = 590;
   map.getPane("labels").style.pointerEvents = "none";
   const geo = S.geo;
@@ -819,7 +880,10 @@ function tipHtml(s) {
 function applyFilters() {
   for (const [id, m] of S.markers) {
     const el = m.getElement();
-    if (el) el.classList.toggle("dim", !matches(S.byId.get(id)));
+    if (el) {
+      el.classList.toggle("dim", !matches(S.byId.get(id)));
+      el.classList.toggle("ds", !!S.downstream?.has(id));
+    }
   }
   S.chains.forEach((c) => {
     const anyMatch = c._stations.some((id) => matches(S.byId.get(id)));
@@ -843,7 +907,209 @@ function renderLegend() {
     <div class="row">${dot("below", "rising")}Rising</div>
     <div class="row">${dot("below", "falling")}Falling</div>
     <div class="row">${dot("below")}Steady or not reported</div>
-    ${S.basemap === "outline" ? '<hr><div class="row"><svg class="shape" viewBox="0 0 18 18" aria-hidden="true"><path d="M1 9h16" stroke="var(--chain)" stroke-width="2.5"/></svg>Gauges joined downstream</div>' : ""}`;
+    ${S.basemap === "outline" ? '<hr><div class="row"><svg class="shape" viewBox="0 0 18 18" aria-hidden="true"><path d="M1 9h16" stroke="var(--chain)" stroke-width="2.5"/></svg>Gauges joined downstream</div>' : ""}
+    ${S.catchOn ? '<hr><div class="row"><span class="catch-key"></span>Catchment, shaded by its most serious gauge</div><div class="row"><span class="catch-key path"></span>Selected gauge\'s path to the bay</div>' : ""}
+    ${radarLegendHtml()}`;
+}
+
+// ------------------------------------------------------------------ catchments overlay
+// Queensland drainage sub-basins (Stanley, Lockyer, Bremer, Brisbane, Pine, Caboolture) and
+// Brisbane City Council creek catchments, each shaded by the most serious flood class among
+// its gauges. Selecting a gauge outlines the catchments its water passes through to the bay.
+function inRing(x, y, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function inGeom(x, y, g) {
+  const polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+  return polys.some((p) => inRing(x, y, p[0]) && !p.slice(1).some((h) => inRing(x, y, h)));
+}
+function labelPoint(g) {
+  // Area-weighted centroid of the largest ring: good enough to place a name.
+  const polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+  let best = null, bestA = 0;
+  polys.forEach((p) => {
+    const r = p[0];
+    let a = 0, cx = 0, cy = 0;
+    for (let i = 0; i < r.length - 1; i++) {
+      const f = r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1];
+      a += f; cx += (r[i][0] + r[i + 1][0]) * f; cy += (r[i][1] + r[i + 1][1]) * f;
+    }
+    if (Math.abs(a) > bestA) { bestA = Math.abs(a); best = [cy / (3 * a), cx / (3 * a)]; }
+  });
+  return best;
+}
+function assignCatchments() {
+  if (!S.catch) return;
+  S.latest.stations.forEach((s) => {
+    s._basin = s._creek = null;
+    if (s.lat == null) return;
+    s._basin = S.catch.basins.features.find((f) => inGeom(s.lon, s.lat, f.geometry)) || null;
+    s._creek = S.catch.creeks.features.find((f) => inGeom(s.lon, s.lat, f.geometry)) || null;
+  });
+  [...S.catch.basins.features, ...S.catch.creeks.features].forEach((f) => {
+    const key = f.properties.level === "basin" ? "_basin" : "_creek";
+    const inside = S.latest.stations.filter((s) => s[key] === f);
+    f._count = inside.length;
+    f._worst = inside.reduce((a, s) => (CLASSES[clsKey(s)].rank > CLASSES[a].rank ? clsKey(s) : a), "none");
+  });
+}
+function basinChain(s) {
+  const steps = [];
+  let f = s && s._basin;
+  const seen = new Set();
+  while (f && !seen.has(f)) {
+    seen.add(f);
+    steps.push(f);
+    f = S.catch.basins.features.find((x) => x.properties.name === f.properties.into) || null;
+  }
+  return steps;
+}
+function downstreamOf(s) {
+  const byOrder = (a, b) => a.order - b.order;
+  const out = S.latest.stations.filter((x) => x.waterway === s.waterway && x.order > s.order).sort(byOrder);
+  const b = s._basin?.properties;
+  if (b && b.receivingRiver && b.firstGauge && s.waterway === b.mainRiver) {
+    const recv = S.latest.stations.filter((x) => x.waterway === b.receivingRiver).sort(byOrder);
+    const start = recv.findIndex((x) => (x.place || "").startsWith(b.firstGauge));
+    if (start >= 0) out.push(...recv.slice(start));
+  }
+  return out;
+}
+function renderCatchments() {
+  const map = S.map;
+  (S.catchLayers || []).forEach((l) => map.removeLayer(l));
+  S.catchLayers = [];
+  if (!S.catchOn || !S.catch || !S.latest) return;
+  const sel = S.selected ? S.byId.get(S.selected) : null;
+  const path = new Set(sel ? basinChain(sel) : []);
+  if (sel && sel._creek) path.add(sel._creek);
+  const style = (f) => ({
+    className: `rw-catch ${f.properties.level} c-${f._count ? f._worst : "empty"}${path.has(f) ? " path" : ""}`,
+  });
+  const basins = L.geoJSON(S.catch.basins, { pane: "catchments", interactive: false, style }).addTo(map);
+  const creeks = L.geoJSON(S.catch.creeks, { pane: "catchments", interactive: false, style }).addTo(map);
+  S.catchLayers.push(basins, creeks);
+  [...S.catch.basins.features, ...S.catch.creeks.features].forEach((f) => {
+    const p = labelPoint(f.geometry);
+    if (!p) return;
+    const lvl = f.properties.level;
+    const icon = L.divIcon({ className: `rw-catch-label ${lvl}${path.has(f) ? " path" : ""}`, html: `<span>${esc(f.properties.name)}</span>`, iconSize: null });
+    S.catchLayers.push(L.marker(p, { icon, pane: "catchments", interactive: false, keyboard: false }).addTo(map));
+  });
+}
+function setCatchments(on) {
+  S.catchOn = on;
+  try { localStorage.setItem("rw-catchments", on ? "1" : "0"); } catch (e) { /* storage blocked */ }
+  $("#catch-btn").setAttribute("aria-pressed", on);
+  renderCatchments();
+  renderLegend();
+}
+function waterPathHtml(s) {
+  if (!S.catch || !s._basin) return "";
+  const chain = basinChain(s);
+  const steps = [];
+  if (s._creek) steps.push(`<li><b>${esc(s._creek.properties.name)}</b> catchment</li>`);
+  chain.forEach((f, i) => {
+    const p = f.properties;
+    const verb = /Bay$/.test(p.into || "") ? "flows into" : "joins the";
+    steps.push(`<li><b>${esc(p.name)}</b> ${i === 0 && !s._creek ? "catchment" : ""}<span class="flow-via">${p.into ? `${verb} ${esc(p.into)}${p.via ? ` ${esc(p.via)}` : ""}` : ""}</span></li>`);
+  });
+  const last = chain[chain.length - 1]?.properties;
+  if (last?.into && !S.catch.basins.features.some((x) => x.properties.name === last.into)) steps.push(`<li><b>${esc(last.into)}</b></li>`);
+  const down = downstreamOf(s);
+  const shown = down.slice(0, 8);
+  const rows = shown.map((x) => {
+    const key = clsKey(x);
+    return `<li><button type="button" class="ds-row" data-id="${esc(x.id)}"><span class="swatch sw-${key}"></span><span class="ds-name">${esc(x.name)}</span><span class="num">${fmtH(x.height)} m</span>${pill(key)}</button></li>`;
+  }).join("");
+  return `<div>
+    <h3 class="section-title">Where this water goes</h3>
+    <ol class="flow">${steps.join("")}</ol>
+    ${down.length ? `<p class="g-sub" style="margin:10px 0 4px">Gauges downstream, in order:</p><ol class="ds-list">${rows}</ol>${down.length > shown.length ? `<p class="g-sub" style="margin:4px 0 0">and ${down.length - shown.length} more further down.</p>` : ""}`
+      : `<p class="g-sub" style="margin:8px 0 0">No gauges downstream of this one on ${esc(s.waterway)} in this bulletin.</p>`}
+  </div>`;
+}
+
+// ------------------------------------------------------------------ radar overlay
+// BoM radar frames collected with the river heights (anonymous FTP /anon/gen/radar), positioned
+// with BoM's coordinates files. Plays the last ~40 minutes as a loop.
+function radarList() {
+  return (S.radarData?.radars || []).filter((r) => r.bounds && r.frames?.length);
+}
+function currentRadar() {
+  const list = radarList();
+  return list.find((r) => r.id === S.radarId) || list[0] || null;
+}
+function showRadarFrame() {
+  const r = currentRadar();
+  if (!S.radarOn || !r) { if (S.radarLayer) { S.map.removeLayer(S.radarLayer); S.radarLayer = null; } return; }
+  S.radarIdx = Math.max(0, Math.min(S.radarIdx ?? r.frames.length - 1, r.frames.length - 1));
+  const f = r.frames[S.radarIdx];
+  const bounds = L.latLngBounds(r.bounds);
+  if (!S.radarLayer) {
+    S.radarLayer = L.imageOverlay(f.url, bounds, { pane: "radar", className: "rw-radar", interactive: false, opacity: 0.8,
+      attribution: 'Radar: <a href="https://www.bom.gov.au/australia/radar/" target="_blank" rel="noopener">Bureau of Meteorology</a>' }).addTo(S.map);
+  } else { S.radarLayer.setUrl(f.url); S.radarLayer.setBounds(bounds); }
+  const mins = Math.round((nowMs() - Date.parse(f.time)) / 60000);
+  $("#radar-time").textContent = `${tFmt(f.time)}${mins > 30 ? ` (${mins} min old)` : ""}`;
+  $("#radar-slider").max = r.frames.length - 1;
+  $("#radar-slider").value = S.radarIdx;
+}
+function setRadarPlaying(on) {
+  clearInterval(S.radarTimer);
+  S.radarTimer = null;
+  $("#radar-play").setAttribute("aria-pressed", on);
+  $("#radar-play").textContent = on ? "Pause" : "Play";
+  if (!on) return;
+  const step = () => {
+    const r = currentRadar();
+    if (!r) return;
+    S.radarIdx = S.radarIdx >= r.frames.length - 1 ? 0 : S.radarIdx + 1;
+    showRadarFrame();
+  };
+  S.radarTimer = setInterval(step, matchMedia("(prefers-reduced-motion: reduce)").matches ? 1500 : 650);
+}
+function setRadar(on) {
+  S.radarOn = on;
+  $("#radar-btn").setAttribute("aria-pressed", on);
+  $("#radar-ctl").hidden = !on;
+  if (!on) setRadarPlaying(false);
+  else {
+    const r = currentRadar();
+    S.radarIdx = r ? r.frames.length - 1 : 0;
+    r?.frames.forEach((f) => { const im = new Image(); im.src = f.url; });  // preload the loop
+  }
+  showRadarFrame();
+  renderLegend();
+}
+function setupRadar() {
+  const list = radarList();
+  $("#radar-btn").hidden = !list.length;
+  const sel = $("#radar-site");
+  sel.innerHTML = list.map((r) => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join("");
+  sel.hidden = list.length < 2;
+  if (!list.some((r) => r.id === S.radarId)) S.radarId = list[0]?.id;
+  sel.value = S.radarId || "";
+  if (S.radarOn) showRadarFrame();
+}
+async function loadRadar() {
+  if (S.embedded) return;
+  try {
+    const r = await fetch(`data/radar.json?t=${Date.now()}`, { cache: "no-store" });
+    S.radarData = r.ok ? await r.json() : null;
+  } catch (e) { S.radarData = null; }
+  setupRadar();
+}
+function radarLegendHtml() {
+  const r = currentRadar();
+  if (!S.radarOn || !r?.palette?.length) return "";
+  const stops = r.palette.map((c) => `<span style="background:${c}"></span>`).join("");
+  return `<hr><div class="radar-ramp" aria-label="Radar rain intensity scale">${stops}</div><div class="radar-ramp-labels"><span>Light rain</span><span>Heavy</span></div>`;
 }
 
 // ------------------------------------------------------------------ rivers view
@@ -1031,6 +1297,7 @@ function renderGauge() {
       <div class="hydro" id="hydro"><div class="hydro-empty">Loading readings…</div></div>
       <details class="readings"><summary>Show readings as a table</summary><div class="readings-table" id="readings"></div></details>
     </div>
+    ${waterPathHtml(s)}
     <div class="links">
       <a href="${esc(s.links?.plot)}" target="_blank" rel="noopener">BoM plot</a>
       <a href="${esc(s.links?.table)}" target="_blank" rel="noopener">BoM 7-day table</a>
@@ -1039,6 +1306,7 @@ function renderGauge() {
     <p class="g-sub" style="margin:0">${locationNote(s)}</p>`;
 
   $("#back").addEventListener("click", () => showView("rivers"));
+  view.querySelectorAll(".ds-row").forEach((b) => b.addEventListener("click", () => select(b.dataset.id)));
   view.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
     S.range = +b.dataset.h;
     view.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", x === b));
@@ -1227,6 +1495,8 @@ function select(id, { fromMap = false, keepView = false } = {}) {
     }
   });
   renderLabels();
+  S.downstream = new Set(s ? downstreamOf(s).map((x) => x.id) : []);
+  renderCatchments();
   applyFilters();
   $("#tab-gauge").disabled = false;
   try { history.replaceState(null, "", `#g${id}`); } catch (e) { /* not available in every viewer */ }
@@ -1250,8 +1520,10 @@ function index() {
 
 function renderAll() {
   index();
+  assignCatchments();
   renderHeader();
   renderMap();
+  renderCatchments();
   renderAbout();
   applyFilters();
   if (S.view === "gauge" && S.selected) renderGauge();
@@ -1262,6 +1534,7 @@ async function refresh() {
     S.latest = await loadLatest();
     S.historyLoading = null;
     renderAll();
+    loadRadar();
   } catch (e) { /* keep showing the last good data; the timestamp shows its age */ }
 }
 
@@ -1270,6 +1543,10 @@ async function boot() {
   try {
     S.geo = S.embedded?.geo || await fetch("geo/seq-base.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
   } catch (e) { S.geo = null; }
+  try {
+    S.catch = S.embedded?.catchments || await fetch("geo/catchments.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  } catch (e) { S.catch = null; }
+  try { S.catchOn = localStorage.getItem("rw-catchments") === "1"; } catch (e) { S.catchOn = false; }
   initMap();
   renderLegend();
   if (matchMedia("(max-width: 860px)").matches) $("#legend-box").open = false;
@@ -1282,6 +1559,16 @@ async function boot() {
   renderAll();
   S.map.invalidateSize({ pan: false });
   fitVisible();
+  if (S.catch) {
+    $("#catch-btn").hidden = false;
+    $("#catch-btn").setAttribute("aria-pressed", S.catchOn);
+    $("#catch-btn").addEventListener("click", () => setCatchments(!S.catchOn));
+  }
+  $("#radar-btn").addEventListener("click", () => setRadar(!S.radarOn));
+  $("#radar-play").addEventListener("click", () => setRadarPlaying(!S.radarTimer));
+  $("#radar-slider").addEventListener("input", (e) => { setRadarPlaying(false); S.radarIdx = +e.target.value; showRadarFrame(); });
+  $("#radar-site").addEventListener("change", (e) => { S.radarId = e.target.value; const r = currentRadar(); S.radarIdx = r ? r.frames.length - 1 : 0; showRadarFrame(); renderLegend(); });
+  loadRadar();
   $("#q").addEventListener("input", (e) => { S.q = lower(e.target.value.trim()); applyFilters(); });
   $("#area").addEventListener("change", (e) => { S.area = e.target.value; applyFilters(); fitVisible(); });
   $("#tab-rivers").addEventListener("click", () => showView("rivers"));

@@ -240,6 +240,16 @@ def parse_radar_map(text: str) -> list | None:
     """
     flat = " ".join(text.split())
     num = r"(-?\d+(?:\.\d+)?)"
+    # BoM's format: Gnomonic projection with corners lon0/lat0 (SW), lon1/lat1 (NW), lon2/lat2 (NE), lon3/lat3 (SE).
+    # The edges are slightly skewed, so use each edge's midpoint (within ~1 km for the 128 km image).
+    corners = {k: float(v) for k, v in re.findall(r"\b((?:lat|lon)[0-3])\s*=\s*(-?\d+(?:\.\d+)?)", flat)}
+    if len(corners) == 8:
+        west = (corners["lon0"] + corners["lon1"]) / 2
+        east = (corners["lon2"] + corners["lon3"]) / 2
+        south = (corners["lat0"] + corners["lat3"]) / 2
+        north = (corners["lat1"] + corners["lat2"]) / 2
+        if -45 < south < north < -8 and 105 < west < east < 160:
+            return [[round(south, 5), round(west, 5)], [round(north, 5), round(east, 5)]]
     edges = {}
     for key, names in (("n", "north|top"), ("s", "south|bottom"), ("e", "east|right"), ("w", "west|left")):
         m = re.search(rf"(?:{names})\w*\s*(?:lat\w*|lon\w*)?\s*[:=]?\s*{num}", flat, re.I)
@@ -315,6 +325,8 @@ def collect_radar(site_dir: Path, meta: dict, now: datetime, radar_source, coord
                     got.append({"time": stamp.astimezone(bp.AEST).isoformat(), "url": f"radar/{name}"})
                     palette = png_palette(data) or palette
                 entry = maps.get(rid, {})
+                if entry.get("sample"):  # re-read the saved file so parser improvements apply without refetching
+                    entry["bounds"] = parse_radar_map(entry["sample"])
                 checked = iso_to_min(entry.get("checked"))
                 if coords_source is not None and (entry.get("bounds") is None or checked is None
                                                   or bp.epoch_minutes(now) - checked >= RADAR_MAP_REFRESH.total_seconds() / 60):

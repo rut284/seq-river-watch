@@ -56,8 +56,11 @@ def main() -> None:
 
     latest, history = snapshot()
     geo = json.loads((ROOT / "site/geo/seq-base.json").read_text(encoding="utf-8"))
+    catch_path = ROOT / "site/geo/catchments.json"
+    catchments = json.loads(catch_path.read_text(encoding="utf-8")) if catch_path.is_file() else None
     page = (ROOT / "site/index.html").read_text(encoding="utf-8")
-    blob = json.dumps({"latest": latest, "history": history, "geo": geo}, separators=(",", ":"), ensure_ascii=False)
+    blob = json.dumps({"latest": latest, "history": history, "geo": geo, "catchments": catchments},
+                      separators=(",", ":"), ensure_ascii=False)
     blob = blob.replace("</", "<\\/")
     page = page.replace('<script type="application/json" id="embedded-data"></script>',
                         f'<script type="application/json" id="embedded-data">{blob}</script>')

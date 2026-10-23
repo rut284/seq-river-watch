@@ -34,13 +34,13 @@ BCC_CATCHMENTS = ("https://data.brisbane.qld.gov.au/api/explore/v2.1/catalog/dat
 # Where each sub-basin's water goes, and the first gauge downstream of the junction on the
 # receiving river (matched by name in the bulletin). Kept to well-known junctions only.
 DRAINS_TO = {
-    "1433": {"into": "Brisbane River", "via": "Somerset Dam and Lake Wivenhoe", "receivingRiver": "Brisbane River", "firstGauge": "Wivenhoe Dam HG"},
-    "1432": {"into": "Brisbane River", "via": "below Wivenhoe Dam, above Lowood", "receivingRiver": "Brisbane River", "firstGauge": "Lowood"},
+    "1433": {"into": "Brisbane River", "via": "through Somerset Dam into Lake Wivenhoe", "receivingRiver": "Brisbane River", "firstGauge": "Wivenhoe Dam HG"},
+    "1432": {"into": "Brisbane River", "via": "below Wivenhoe Dam, upstream of Lowood", "receivingRiver": "Brisbane River", "firstGauge": "Lowood"},
     "1431": {"into": "Brisbane River", "via": "near Moggill", "receivingRiver": "Brisbane River", "firstGauge": "Moggill"},
-    "1430": {"into": "Moreton Bay", "via": "the river mouth at Brisbane Bar"},
-    "1421": {"into": "Bramble Bay", "via": "the Pine River, joining the South Pine at Lawnton"},
-    "1422": {"into": "Bramble Bay", "via": "the Pine River, joining the North Pine at Lawnton"},
-    "1420": {"into": "Deception Bay", "via": "the Caboolture River mouth"},
+    "1430": {"into": "Moreton Bay", "via": "at the river mouth near Brisbane Bar"},
+    "1421": {"into": "Bramble Bay", "via": "through the Pine River, after meeting the South Pine River near Lawnton"},
+    "1422": {"into": "Bramble Bay", "via": "through the Pine River, after meeting the North Pine River near Lawnton"},
+    "1420": {"into": "Deception Bay", "via": "at the Caboolture River mouth"},
 }
 MAIN_RIVER = {"1433": "Stanley River", "1432": "Lockyer Creek", "1431": "Bremer River", "1430": "Brisbane River",
               "1421": "North Pine River", "1422": "South Pine River", "1420": "Caboolture River"}
