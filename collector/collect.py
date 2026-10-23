@@ -51,6 +51,21 @@ TABLE_RETRY_AFTER = timedelta(days=7)
 TABLES_PER_RUN = 20
 BOM_WEB = "https://www.bom.gov.au"
 
+# Councils publish their gauges' surveyed positions keyed by BoM station number. BoM's own
+# positions are often rounded (some to the nearest minute, up to ~1 km out), so these win.
+# Moreton Bay is read first and Brisbane second, so Brisbane's register decides for the few
+# gauges both list (Brisbane is the custodian of those sites).
+COUNCIL_LOCATIONS = [
+    ("City of Moreton Bay gauge register",
+     "https://services-ap1.arcgis.com/152ojN3Ts9H3cdtl/arcgis/rest/services/CMB_Council_Assets/FeatureServer/5/query"
+     "?where=1%3D1&outFields=BOM_STATION_NUMBER,SENSOR_TYPE&outSR=4326&f=json&resultRecordCount=2000"),
+    ("Brisbane City Council gauge register",
+     "https://data.brisbane.qld.gov.au/api/explore/v2.1/catalog/datasets/"
+     "telemetry-sensors-rainfall-and-stream-heights-metadata/records?limit=100&offset={offset}"),
+]
+COUNCIL_REFRESH = timedelta(hours=24)
+SEQ_BOX = (-28.6, -26.3, 151.4, 153.8)  # lat min, lat max, lon min, lon max
+
 
 def log(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
@@ -148,6 +163,56 @@ def latest_named(names: list[str], prefix: str) -> str | None:
 
 # ---------------------------------------------------------------- previous state
 
+def http_json(url: str, timeout: float = 30):
+    req = urllib.request.Request(url, headers={"User-Agent": "seq-river-watch-collector (github.com)"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def in_seq(lat, lon) -> bool:
+    return (isinstance(lat, (int, float)) and isinstance(lon, (int, float))
+            and SEQ_BOX[0] <= lat <= SEQ_BOX[1] and SEQ_BOX[2] <= lon <= SEQ_BOX[3])
+
+
+def fetch_council_locations(get=http_json) -> dict[str, dict]:
+    """{station id: {lat, lon, source}} for river/stream gauges in the councils' registers."""
+    found: dict[str, dict] = {}
+    errors = []
+    for source, url in COUNCIL_LOCATIONS:
+        try:
+            if "arcgis" in url:
+                for f in get(url).get("features", []):
+                    a, g = f.get("attributes", {}), f.get("geometry") or {}
+                    sid = bp.norm_id(str(a.get("BOM_STATION_NUMBER") or ""))
+                    if sid and a.get("SENSOR_TYPE") == "RIVER" and in_seq(g.get("y"), g.get("x")):
+                        found.setdefault(sid + "|mb", {"id": sid, "lat": round(g["y"], 6), "lon": round(g["x"], 6), "source": source})
+            else:
+                offset = 0
+                while offset < 1000:
+                    page = get(url.format(offset=offset))
+                    rows = page.get("results", [])
+                    for r in rows:
+                        sid = bp.norm_id(str(r.get("location_id") or ""))
+                        if sid and re.search(r"stream|tide|height|level", str(r.get("sensor_type")), re.I) \
+                                and in_seq(r.get("latitude"), r.get("longitude")):
+                            found[sid + "|bcc"] = {"id": sid, "lat": round(r["latitude"], 6), "lon": round(r["longitude"], 6), "source": source}
+                    offset += len(rows)
+                    if not rows or offset >= page.get("total_count", 0):
+                        break
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            errors.append(f"{source}: {exc}")
+    points: dict[str, dict] = {}
+    for key in sorted(found, key=lambda k: k.endswith("|bcc")):  # Moreton Bay first, Brisbane overrides
+        p = found[key]
+        points[p["id"]] = {"lat": p["lat"], "lon": p["lon"], "source": p["source"]}
+    return points, errors
+
+
+def minute_rounded(lat, lon) -> bool:
+    """True when a position sits exactly on whole arc-minutes, i.e. it was rounded (up to ~1 km out)."""
+    return all(abs(v * 60 - round(v * 60)) < 0.006 for v in (lat, lon))
+
+
 def load_previous(base: str | None) -> tuple[dict, dict]:
     """Return (history series, meta) from the last published site, or empty ones."""
     if not base:
@@ -224,7 +289,8 @@ def sparkline(points: list[list], now_min: int, hours: int = 24, step: int = 30)
 
 # ---------------------------------------------------------------- the run
 
-def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_path: Path) -> int:
+def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_path: Path,
+        council_fetcher=fetch_council_locations) -> int:
     now_min = bp.epoch_minutes(now)
     catalogue = json.loads(catalogue_path.read_text(encoding="utf-8"))
     series_prev, meta = load_previous(previous)
@@ -406,6 +472,25 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         annotate("error", "No new river data", "Nothing usable came from BoM's feed this run; the site keeps its last data. " + json.dumps(status))
         return 2
 
+    # ---------------------------------------------------------------- council gauge positions (daily)
+    council = meta.get("councilLocations") or {}
+    fetched_at = iso_to_min(council.get("fetched"))
+    if council_fetcher and (not council.get("points") or fetched_at is None
+                            or now_min - fetched_at >= COUNCIL_REFRESH.total_seconds() / 60):
+        try:
+            points, errors = council_fetcher()
+            if points:
+                council = {"fetched": now.isoformat(), "points": points}
+            for err in errors:
+                annotate("warning", "Council gauge positions", err)
+                log(f"council locations: {err}")
+        except Exception as exc:  # noqa: BLE001 - positions are an enhancement; never fail the run for them
+            annotate("warning", "Council gauge positions", str(exc))
+            log(f"council locations: {exc}")
+    council_points: dict[str, dict] = council.get("points") or {}
+    meta["councilLocations"] = council
+    status["locations"] = {"surveyed": sum(1 for s in wanted if s in council_points), "fetched": council.get("fetched")}
+
     # ---------------------------------------------------------------- merge history
     cutoff = now_min - HISTORY_DAYS * 24 * 60
     merged: dict[str, dict[int, float]] = {}
@@ -443,13 +528,24 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         mp = map_info.get(sid, {})
         tb = table_info.get(sid, {})
 
-        # coordinates: live map page > cached from an earlier map page > bundled catalogue
+        # coordinates: council register (surveyed) > BoM map page > cached map page > BoM catalogue.
+        # A BoM position rounded to whole minutes loses to a catalogue position that isn't.
+        options = []
         if mp.get("lat") is not None:
-            lat, lon, coord_src = mp["lat"], mp["lon"], f"BoM flood warning map {mp['page']}"
-        elif cached.get("lat") is not None:
-            lat, lon, coord_src = cached["lat"], cached["lon"], cached.get("coordSource")
+            options.append((mp["lat"], mp["lon"], f"BoM flood warning map {mp['page']}"))
+        if cached.get("lat") is not None:
+            options.append((cached["lat"], cached["lon"], cached.get("coordSource")))
+        if st.get("lat") is not None:
+            options.append((st["lat"], st["lon"], st.get("coordSource")))
+        options.sort(key=lambda o: minute_rounded(o[0], o[1]))  # stable: keeps the order above otherwise
+        cp = council_points.get(sid)
+        if cp:
+            lat, lon, coord_src, coord_acc = cp["lat"], cp["lon"], cp["source"], "surveyed"
+        elif options:
+            lat, lon, coord_src = options[0]
+            coord_acc = "rounded" if minute_rounded(lat, lon) else "bom"
         else:
-            lat, lon, coord_src = st.get("lat"), st.get("lon"), st.get("coordSource")
+            lat = lon = coord_src = coord_acc = None
 
         # flood classification levels: map page > station table > cache. Never borrowed from another gauge.
         levels, levels_src = {}, None
@@ -505,7 +601,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         out_stations.append({
             "id": sid, "name": st.get("name"), "waterway": st.get("waterway"), "place": st.get("place"),
             "group": st.get("group"), "order": st.get("order"), "type": st.get("type"), "datum": st.get("datum"),
-            "lat": lat, "lon": lon, "coordSource": coord_src,
+            "lat": lat, "lon": lon, "coordSource": coord_src, "coordAccuracy": coord_acc,
             "height": height, "time": min_to_iso(obs_t) if obs_t is not None else None, "timeSource": obs_src,
             "floodClass": flood_class, "floodClassRaw": rep.get("floodClassRaw") or mp.get("floodClassRaw"),
             "classSource": class_src,
@@ -546,11 +642,14 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         counts[s["floodClass"] or "unknown"] = counts.get(s["floodClass"] or "unknown", 0) + 1
     log(f"wrote {len(out_stations)} gauges {counts}; sources: {json.dumps(status)}")
     located = sum(1 for s in out_stations if s["lat"] is not None)
+    surveyed = sum(1 for s in out_stations if s["coordAccuracy"] == "surveyed")
+    rounded = sum(1 for s in out_stations if s["coordAccuracy"] == "rounded")
     with_levels = sum(1 for s in out_stations if s["levels"])
     with_history = sum(1 for s in out_stations if s["historyPoints"] >= 2)
     annotate("notice", "River heights updated",
              f"{len(out_stations)} gauges ({', '.join(f'{k} {v}' for k, v in sorted(counts.items()))}); "
-             f"{located} on the map, {with_levels} with flood levels, {with_history} with 2+ readings of history. "
+             f"{located} on the map ({surveyed} at council-surveyed positions, {rounded} only approximate), "
+             f"{with_levels} with flood levels, {with_history} with 2+ readings of history. "
              f"Bulletin {'OK' if status.get('bulletin', {}).get('ok') else 'missing'}, "
              f"map page {'OK' if status.get('mapPages', {}).get('ok') else 'missing'}, "
              f"15-min readings {status.get('observations', {}).get('readings', 0)}, "
@@ -563,6 +662,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         f"| Flood map pages | {status['mapPages']['gauges']} gauges from {', '.join(status['mapPages']['pages']) or 'none'} |",
         f"| 15-minute readings | {status['observations']['readings']} from {', '.join(status['observations']['files']) or 'none'} |",
         f"| History tables | {'offered' if status['historyTables']['available'] else 'not offered'}, {status['historyTables']['fetched']} fetched |",
+        f"| Council gauge positions | {surveyed} gauges, register read {status['locations']['fetched'] or 'never'} |",
         "", f"**{len(out_stations)} gauges**: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())),
         f"{located} on the map · {with_levels} with flood levels · {with_history} with history",
     ])
@@ -582,11 +682,16 @@ def main(argv=None) -> int:
     ap.add_argument("--feed-dir", default=None, help="read feed files from this local folder instead of BoM's FTP (testing)")
     ap.add_argument("--now", default=None, help="override the current time (ISO 8601, testing)")
     ap.add_argument("--catalogue", default=str(HERE / "stations.json"))
+    ap.add_argument("--council-file", default=None, help="read council gauge positions from this JSON file instead of the web (testing)")
     args = ap.parse_args(argv)
     now = datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
     source = DirSource(args.feed_dir) if args.feed_dir else FtpSource()
     try:
-        return run(source, args.previous, Path(args.out), now, Path(args.catalogue))
+        fetcher = None if args.feed_dir and not args.council_file else fetch_council_locations
+        if args.council_file:
+            fixed = json.loads(Path(args.council_file).read_text(encoding="utf-8"))
+            fetcher = lambda: (fixed, [])  # noqa: E731
+        return run(source, args.previous, Path(args.out), now, Path(args.catalogue), council_fetcher=fetcher)
     except (OSError, EOFError, ftplib.Error) as exc:
         log(f"could not reach the BoM feed: {exc}")
         return 2

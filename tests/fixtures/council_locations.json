@@ -1,0 +1,482 @@
+{
+ "040788": {
+  "lat": -27.655308,
+  "lon": 153.000406,
+  "source": "Brisbane City Council gauge register"
+ },
+ "040789": {
+  "lat": -27.593567,
+  "lon": 152.996778,
+  "source": "Brisbane City Council gauge register"
+ },
+ "040791": {
+  "lat": -27.56194,
+  "lon": 153.026996,
+  "source": "Brisbane City Council gauge register"
+ },
+ "040796": {
+  "lat": -27.584692,
+  "lon": 153.01001,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540059": {
+  "lat": -26.839987,
+  "lon": 152.841006,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540061": {
+  "lat": -27.511376,
+  "lon": 152.926662,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540071": {
+  "lat": -27.546892,
+  "lon": 152.988372,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540097": {
+  "lat": -27.730453,
+  "lon": 152.946878,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540107": {
+  "lat": -27.466654,
+  "lon": 152.883066,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540111": {
+  "lat": -27.403391,
+  "lon": 152.978646,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540113": {
+  "lat": -27.370485,
+  "lon": 153.005329,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540118": {
+  "lat": -27.444481,
+  "lon": 153.005314,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540119": {
+  "lat": -27.44693,
+  "lon": 152.926397,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540120": {
+  "lat": -27.382354,
+  "lon": 153.0588,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540121": {
+  "lat": -27.380613,
+  "lon": 152.979177,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540122": {
+  "lat": -27.352887,
+  "lon": 153.032022,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540124": {
+  "lat": -27.33418,
+  "lon": 153.058401,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540126": {
+  "lat": -27.528264,
+  "lon": 153.105826,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540127": {
+  "lat": -27.559989,
+  "lon": 153.104185,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540128": {
+  "lat": -27.501018,
+  "lon": 153.105435,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540129": {
+  "lat": -27.44881,
+  "lon": 153.125969,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540130": {
+  "lat": -27.441126,
+  "lon": 153.034819,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540132": {
+  "lat": -27.489611,
+  "lon": 153.049787,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540134": {
+  "lat": -27.521486,
+  "lon": 153.055421,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540189": {
+  "lat": -27.193998,
+  "lon": 152.801137,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540198": {
+  "lat": -27.4698,
+  "lon": 153.0343,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540201": {
+  "lat": -27.587144,
+  "lon": 152.864111,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540202": {
+  "lat": -27.266651,
+  "lon": 152.933336,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540204": {
+  "lat": -27.249992,
+  "lon": 152.950003,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540205": {
+  "lat": -27.346527,
+  "lon": 152.923753,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540242": {
+  "lat": -27.149041,
+  "lon": 152.962245,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540243": {
+  "lat": -27.086319,
+  "lon": 152.939305,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540244": {
+  "lat": -27.047468,
+  "lon": 152.859885,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540245": {
+  "lat": -27.164452,
+  "lon": 152.937252,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540274": {
+  "lat": -27.524684,
+  "lon": 152.994663,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540277": {
+  "lat": -27.266651,
+  "lon": 152.933336,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540278": {
+  "lat": -27.440702,
+  "lon": 153.169379,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540279": {
+  "lat": -27.485587,
+  "lon": 153.17128,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540286": {
+  "lat": -27.441564,
+  "lon": 153.047296,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540296": {
+  "lat": -27.549567,
+  "lon": 152.890822,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540338": {
+  "lat": -26.935757,
+  "lon": 152.761399,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540342": {
+  "lat": -26.857187,
+  "lon": 152.938006,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540357": {
+  "lat": -27.098121,
+  "lon": 152.890509,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540378": {
+  "lat": -27.565807,
+  "lon": 152.930385,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540412": {
+  "lat": -27.266457,
+  "lon": 152.954451,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540413": {
+  "lat": -27.297161,
+  "lon": 152.985345,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540415": {
+  "lat": -27.342567,
+  "lon": 152.960262,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540416": {
+  "lat": -27.37039,
+  "lon": 152.889521,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540417": {
+  "lat": -27.288137,
+  "lon": 153.017325,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540431": {
+  "lat": -27.361689,
+  "lon": 153.057626,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540432": {
+  "lat": -27.553681,
+  "lon": 153.009734,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540433": {
+  "lat": -27.542053,
+  "lon": 153.013724,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540439": {
+  "lat": -27.276178,
+  "lon": 152.993551,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540444": {
+  "lat": -27.327853,
+  "lon": 152.864899,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540445": {
+  "lat": -27.202728,
+  "lon": 153.014539,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540468": {
+  "lat": -27.392896,
+  "lon": 153.082018,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540469": {
+  "lat": -27.400186,
+  "lon": 153.07558,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540478": {
+  "lat": -27.416507,
+  "lon": 153.032495,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540483": {
+  "lat": -27.247585,
+  "lon": 152.837282,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540484": {
+  "lat": -27.218627,
+  "lon": 152.840177,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540496": {
+  "lat": -27.136817,
+  "lon": 153.049643,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540508": {
+  "lat": -27.175219,
+  "lon": 152.922197,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540533": {
+  "lat": -26.876987,
+  "lon": 153.003006,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540536": {
+  "lat": -26.898987,
+  "lon": 152.959006,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540542": {
+  "lat": -27.108735,
+  "lon": 152.948203,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540543": {
+  "lat": -27.01371,
+  "lon": 152.945637,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540548": {
+  "lat": -27.407093,
+  "lon": 153.073602,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540557": {
+  "lat": -27.05046,
+  "lon": 152.91173,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540558": {
+  "lat": -27.104562,
+  "lon": 153.007096,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540561": {
+  "lat": -27.053024,
+  "lon": 152.962783,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540562": {
+  "lat": -27.28309,
+  "lon": 152.969479,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540619": {
+  "lat": -27.164586,
+  "lon": 152.940771,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540623": {
+  "lat": -27.173524,
+  "lon": 152.982912,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540624": {
+  "lat": -27.057002,
+  "lon": 152.976811,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540625": {
+  "lat": -27.316581,
+  "lon": 153.002439,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540627": {
+  "lat": -27.074743,
+  "lon": 153.011184,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540628": {
+  "lat": -27.188319,
+  "lon": 152.8265,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540635": {
+  "lat": -27.031058,
+  "lon": 153.04009,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540636": {
+  "lat": -27.392514,
+  "lon": 152.996723,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540658": {
+  "lat": -27.241719,
+  "lon": 152.991275,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540659": {
+  "lat": -27.217458,
+  "lon": 153.043708,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540660": {
+  "lat": -27.087632,
+  "lon": 152.9605,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540682": {
+  "lat": -27.531969,
+  "lon": 152.928725,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540683": {
+  "lat": -27.504001,
+  "lon": 153.005872,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540684": {
+  "lat": -27.471705,
+  "lon": 153.030841,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540685": {
+  "lat": -27.46025,
+  "lon": 153.053569,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540736": {
+  "lat": -27.073421,
+  "lon": 152.946575,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540739": {
+  "lat": -27.366868,
+  "lon": 152.875064,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540740": {
+  "lat": -27.145679,
+  "lon": 153.035843,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540771": {
+  "lat": -27.152095,
+  "lon": 152.976826,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540773": {
+  "lat": -27.051434,
+  "lon": 152.947945,
+  "source": "City of Moreton Bay gauge register"
+ },
+ "540799": {
+  "lat": -27.449165,
+  "lon": 152.991398,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540804": {
+  "lat": -27.44655,
+  "lon": 152.97014,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540805": {
+  "lat": -27.56468,
+  "lon": 152.99039,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540822": {
+  "lat": -27.513348,
+  "lon": 153.039186,
+  "source": "Brisbane City Council gauge register"
+ },
+ "540847": {
+  "lat": -27.357101,
+  "lon": 153.005109,
+  "source": "Brisbane City Council gauge register"
+ }
+}

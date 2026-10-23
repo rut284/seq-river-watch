@@ -32,8 +32,10 @@ def snapshot(demo: bool = True) -> tuple[dict, dict]:
         shutil.copy(ROOT / "tests/fixtures/IDQ60286_2026-10-22.html", feed / "IDQ60286.html")
         shutil.copy(ROOT / "tests/fixtures/IDQ65389.540111.tbl.shtml", feed / "IDQ65389" / "IDQ65389.540111.tbl.shtml")
         out = tmp / "out"
+        council = json.loads((ROOT / "tests/fixtures/council_locations.json").read_text(encoding="utf-8"))
         code = collect.run(collect.DirSource(str(feed)), None, out,
-                           datetime.fromisoformat("2026-10-22T10:40:00+10:00"), ROOT / "collector/stations.json")
+                           datetime.fromisoformat("2026-10-22T10:40:00+10:00"), ROOT / "collector/stations.json",
+                           council_fetcher=lambda: (council, []))
         if code:
             raise SystemExit(f"collector failed with {code}")
         latest = json.loads((out / "latest.json").read_text(encoding="utf-8"))

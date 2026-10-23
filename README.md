@@ -59,6 +59,13 @@ All data comes from BoM's **public data feed** for automated use, `ftp://ftp.bom
 | `IDQ65910_<time>.hcs` | latest water level per gauge |
 | `IDQ65389/IDQ65389.<station>.tbl.shtml` | 7-day tables, used a few per run to fill early history, *only if the feed offers them* (it didn't as of October 2026, so history builds up from the first run) |
 
+**Gauge positions.** BoM's published positions are often rounded, some to the nearest minute of latitude and longitude (up to about 1 km out). So once a day the collector also reads the councils' own gauge registers, which list each gauge's surveyed position by BoM station number:
+
+- [Brisbane City Council: Telemetry sensors, rainfall and stream heights](https://www.data.qld.gov.au/dataset/telemetry-sensors-rainfall-and-stream-heights-metadata) (about 45 gauges)
+- [City of Moreton Bay: Flood Alert Gauge](https://datahub.moretonbay.qld.gov.au/datasets/moretonbay::flood-alert-gauge) (about 45 gauges, CC BY 4.0)
+
+These cover 90 of the 233 gauges. The rest use BoM's position, and each gauge's panel says which source its marker uses and how precise it is.
+
 Other `IDQ65xxx.html` map pages are scanned at most once a day, and only to find gauges missing from `IDQ65325.html`; any page that supplies gauges is remembered and read on every run.
 
 Each run's results (which files were found, how many gauges got readings, coordinates and flood levels) appear as notes on the run's page under **Actions**.
@@ -72,7 +79,7 @@ The collector keeps going if any single file is missing. Without the bulletin it
 ### Credits and licences
 
 - River heights: © Commonwealth of Australia, Bureau of Meteorology, [CC BY 4.0 AU](https://creativecommons.org/licenses/by/4.0/au/). Most gauge data is supplied to BoM by other agencies, in real time and without quality control, and is subject to those agencies' terms.
-- Fallback gauge coordinates: BoM Queensland flood warning river height station catalogue (5 January 2022).
+- Gauge positions: Brisbane City Council and City of Moreton Bay gauge registers (open data); otherwise BoM's flood-warning map page and Queensland flood warning river height station catalogue (5 January 2022).
 - Coastline, Brisbane River and Lake Wivenhoe outlines: [Natural Earth](https://www.naturalearthdata.com/) (public domain).
 - Map library: [Leaflet](https://leafletjs.com/) 1.9.4 (BSD-2-Clause); street map drawn with [MapLibre GL JS](https://maplibre.org/) 5.24 through [maplibre-gl-leaflet](https://github.com/maplibre/maplibre-gl-leaflet).
 - Street map: [OpenFreeMap](https://openfreemap.org) © [OpenMapTiles](https://www.openmaptiles.org/), data from [OpenStreetMap](https://www.openstreetmap.org/copyright). Free with no key or usage limit, but no uptime guarantee; the project runs on donations.

@@ -969,6 +969,13 @@ function boardSvg(s, lv) {
   return out + "</svg>";
 }
 
+function locationNote(s) {
+  if (s.lat == null) return "This gauge has no published location, so it is not on the map.";
+  if (s.coordAccuracy === "surveyed") return `Location: surveyed position from the ${esc(s.coordSource)}.`;
+  if (s.coordAccuracy === "rounded") return "Location is approximate: BoM publishes this gauge's position rounded to the nearest minute, so the marker can be up to about 1 km from the gauge.";
+  return `Location: BoM's published position (${esc(s.coordSource || "BoM")}), usually within about 100 m of the gauge.`;
+}
+
 function renderGauge() {
   const s = S.byId.get(S.selected);
   const view = $("#view");
@@ -1029,7 +1036,7 @@ function renderGauge() {
       <a href="${esc(s.links?.table)}" target="_blank" rel="noopener">BoM 7-day table</a>
       ${s.lat != null ? `<a href="https://www.openstreetmap.org/?mlat=${s.lat}&mlon=${s.lon}#map=15/${s.lat}/${s.lon}" target="_blank" rel="noopener">Open location in OpenStreetMap</a>` : ""}
     </div>
-    <p class="g-sub" style="margin:0">${s.lat != null ? `Location: ${esc(s.coordSource || "BoM")}.` : "This gauge has no published location, so it is not on the map."}</p>`;
+    <p class="g-sub" style="margin:0">${locationNote(s)}</p>`;
 
   $("#back").addEventListener("click", () => showView("rivers"));
   view.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {

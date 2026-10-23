@@ -198,6 +198,55 @@ class CollectorRunTests(unittest.TestCase):
         self.assertEqual(len(latest["stations"]), 233)  # bundled catalogue keeps the station list
         self.assertEqual({s["id"]: s for s in latest["stations"]}["540478"]["height"], 10.2)
 
+    def test_council_positions_win(self):
+        council = FIX / "council_locations.json"
+        self.assertEqual(self.run_collector("--council-file", str(council)), 0)
+        st = {s["id"]: s for s in self.load("latest.json")["stations"]}
+        kg = st["540118"]  # Enoggera Creek at Kelvin Grove (Bancroft Park)
+        self.assertEqual((kg["lat"], kg["lon"]), (-27.444481, 153.005314))
+        self.assertEqual((kg["coordSource"], kg["coordAccuracy"]), ("Brisbane City Council gauge register", "surveyed"))
+        self.assertEqual(st["540245"]["coordSource"], "City of Moreton Bay gauge register")
+        self.assertEqual(st["540156"]["coordAccuracy"], "bom")  # not in either register
+        self.assertEqual(self.load("latest.json")["sources"]["locations"]["surveyed"], 90)
+
+    def test_minute_rounded_positions(self):
+        self.assertTrue(collect.minute_rounded(-27.516667, 152.933333))   # 27°31' 152°56'
+        self.assertTrue(collect.minute_rounded(-27.5167, 152.9333))
+        self.assertFalse(collect.minute_rounded(-27.4369, 153.0044))
+        self.assertFalse(collect.minute_rounded(-27.444481, 153.005314))
+
+    def test_fetch_council_locations(self):
+        mb = {"features": [
+            {"attributes": {"BOM_STATION_NUMBER": 540111, "SENSOR_TYPE": "RIVER"}, "geometry": {"x": 152.978437, "y": -27.402933}},
+            {"attributes": {"BOM_STATION_NUMBER": 540119, "SENSOR_TYPE": "RAINFALL"}, "geometry": {"x": 152.9264, "y": -27.4469}},
+            {"attributes": {"BOM_STATION_NUMBER": 540245, "SENSOR_TYPE": "RIVER"}, "geometry": {"x": 152.937252, "y": -27.164452}},
+            {"attributes": {"BOM_STATION_NUMBER": 999999, "SENSOR_TYPE": "RIVER"}, "geometry": {"x": 0, "y": 0}},
+        ]}
+        bcc_pages = [
+            {"total_count": 3, "results": [
+                {"location_id": "540111", "sensor_type": "Stream Height AHD", "latitude": -27.403391, "longitude": 152.978646},
+                {"location_id": "40788", "sensor_type": "Stream Height AHD", "latitude": -27.655308, "longitude": 153.000406}]},
+            {"total_count": 3, "results": [
+                {"location_id": "540099", "sensor_type": "Rainfall", "latitude": -27.5, "longitude": 152.9}]},
+        ]
+        def get(url):
+            if "arcgis" in url:
+                return mb
+            return bcc_pages[0] if "offset=0" in url else bcc_pages[1]
+        points, errors = collect.fetch_council_locations(get)
+        self.assertEqual(errors, [])
+        self.assertEqual(set(points), {"540111", "540245", "040788"})
+        self.assertEqual(points["540111"]["source"], "Brisbane City Council gauge register")  # Brisbane wins overlaps
+        self.assertEqual(points["540245"]["lat"], -27.164452)
+
+    def test_council_failure_keeps_run_going(self):
+        def broken():
+            raise OSError("network down")
+        code = collect.run(collect.DirSource(str(self.feed)), None, self.out, datetime.fromisoformat(self.now),
+                           ROOT / "collector" / "stations.json", council_fetcher=broken)
+        self.assertEqual(code, 0)
+        self.assertEqual({s["id"]: s for s in self.load("latest.json")["stations"]}["540118"]["coordAccuracy"], "bom")
+
     def test_over_real_ftp(self):
         try:
             from pyftpdlib.authorizers import DummyAuthorizer
@@ -220,7 +269,7 @@ class CollectorRunTests(unittest.TestCase):
             orig = collect.ftplib.FTP.connect
             collect.ftplib.FTP.connect = lambda self, host="", *a, **k: orig(self, host, port)
             try:
-                code = collect.run(src, None, self.out, datetime.fromisoformat(self.now), ROOT / "collector" / "stations.json")
+                code = collect.run(src, None, self.out, datetime.fromisoformat(self.now), ROOT / "collector" / "stations.json", council_fetcher=None)
             finally:
                 collect.ftplib.FTP.connect = orig
             self.assertEqual(code, 0)
