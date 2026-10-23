@@ -23,6 +23,7 @@ import argparse
 import ftplib
 import io
 import json
+import os
 import re
 import sys
 import time
@@ -49,6 +50,20 @@ BOM_WEB = "https://www.bom.gov.au"
 
 def log(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
+
+
+def annotate(level: str, title: str, msg: str) -> None:
+    """Surface a line as a GitHub Actions annotation (visible on the run page) when running there."""
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        clean_msg = msg.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+        print(f"::{level} title={title}::{clean_msg}", flush=True)
+
+
+def summary(lines: list[str]) -> None:
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if path:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write("\n".join(lines) + "\n")
 
 
 def decode(raw: bytes) -> str:
@@ -224,6 +239,13 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
     with source as src:
         names = src.list()
         log(f"feed listing: {len(names)} files")
+        map_pages_listed = sorted(n for n in names if re.fullmatch(r"IDQ65\d{3}\.html", n))
+        related = sorted(n for n in names if n.startswith(("IDQ6028", "IDQ6538")))[:12]
+        annotate("notice", "BoM feed listing", (
+            f"{len(names)} files. {BULLETIN}.html: {'yes' if f'{BULLETIN}.html' in names else 'NO'}; "
+            f"IDQ65389.html: {'yes' if 'IDQ65389.html' in names else 'NO'}; "
+            f"newest IDQ65911: {latest_named(names, 'IDQ65911') or 'none'}; newest IDQ65910: {latest_named(names, 'IDQ65910') or 'none'}; "
+            f"QLD map pages: {len(map_pages_listed)}; related files: {', '.join(related) or 'none'}"))
 
         # 1. bulletin -------------------------------------------------------
         try:
@@ -245,6 +267,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         except (OSError, EOFError, ftplib.Error, bp.ParseError) as exc:
             status["bulletin"] = {"ok": False, "error": str(exc)}
             log(f"bulletin: {exc}")
+            annotate("warning", "Bulletin not used", str(exc))
 
         wanted = set(stations)
 
@@ -256,6 +279,15 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
             text = src.get(f"{page}.html")
             found = bp.parse_map_page(text)
             fetched_pages.append(page)
+            if page in DEFAULT_MAP_PAGES:
+                hit = sum(1 for sid in found if sid in wanted)
+                if not found:
+                    i = text.find("Popup")
+                    sample = re.sub(r"\s+", " ", text[max(0, i - 40): i + 260] if i >= 0 else text[:300])
+                    annotate("warning", f"{page}.html had no readable gauges", f"{len(text)} chars. Sample: {sample}")
+                else:
+                    with_levels = sum(1 for sid, e in found.items() if sid in wanted and e["levels"])
+                    annotate("notice", f"{page}.html", f"{len(found)} gauges on the page, {hit} in this bulletin, {with_levels} with flood levels")
             for sid, entry in found.items():
                 if sid in wanted and sid not in map_info:
                     map_info[sid] = {**entry, "page": page}
@@ -301,12 +333,23 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
                 log(f"HCS {prefix}: no file in listing")
                 continue
             try:
-                rows = bp.parse_hcs(src.get(name), wanted)
+                text = src.get(name)
+                rows = bp.parse_hcs(text, wanted)
                 hcs_files.append(name)
                 hcs_count += len(rows)
                 readings.extend((sid, t, v, datum, "feed") for sid, t, v, datum in rows)
+                every = bp.parse_hcs(text)
+                if rows:
+                    annotate("notice", name, f"{len(every)} water-level readings in file, {len(rows)} for {len({r[0] for r in rows})} gauges in this bulletin")
+                else:
+                    data_lines = [ln for ln in text.splitlines() if ln.strip() and not ln.startswith("#")]
+                    head = [ln for ln in text.splitlines() if ln.startswith("#")][:3]
+                    annotate("warning", f"{name} gave no readings for these gauges",
+                             f"{len(text)} chars, {len(data_lines)} data lines, {len(every)} water levels overall. "
+                             f"Header: {' | '.join(head)[:300]} First line: {(data_lines[0] if data_lines else '')[:200]}")
             except (OSError, EOFError, ftplib.Error, bp.ParseError) as exc:
                 log(f"HCS {name}: {exc}")
+                annotate("warning", f"{name} not used", str(exc))
         status["observations"] = {"ok": hcs_count > 0, "files": hcs_files, "readings": hcs_count}
         if hcs_count:
             got_new_data = True
@@ -353,6 +396,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
 
     if not got_new_data:
         log("no new data from any source - leaving the published site unchanged")
+        annotate("error", "No new river data", "Nothing usable came from BoM's feed this run; the site keeps its last data. " + json.dumps(status))
         return 2
 
     # ---------------------------------------------------------------- merge history
@@ -494,6 +538,27 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
     for s in out_stations:
         counts[s["floodClass"] or "unknown"] = counts.get(s["floodClass"] or "unknown", 0) + 1
     log(f"wrote {len(out_stations)} gauges {counts}; sources: {json.dumps(status)}")
+    located = sum(1 for s in out_stations if s["lat"] is not None)
+    with_levels = sum(1 for s in out_stations if s["levels"])
+    with_history = sum(1 for s in out_stations if s["historyPoints"] >= 2)
+    annotate("notice", "River heights updated",
+             f"{len(out_stations)} gauges ({', '.join(f'{k} {v}' for k, v in sorted(counts.items()))}); "
+             f"{located} on the map, {with_levels} with flood levels, {with_history} with 2+ readings of history. "
+             f"Bulletin {'OK' if status.get('bulletin', {}).get('ok') else 'missing'}, "
+             f"map page {'OK' if status.get('mapPages', {}).get('ok') else 'missing'}, "
+             f"15-min readings {status.get('observations', {}).get('readings', 0)}, "
+             f"history tables fetched {status.get('historyTables', {}).get('fetched', 0)}")
+    summary([
+        "## River heights update", "",
+        f"Generated {latest['generated']}", "",
+        "| Source | Result |", "|---|---|",
+        f"| Bulletin {BULLETIN} | {'issued ' + status['bulletin']['issued'] if status.get('bulletin', {}).get('ok') else status.get('bulletin', {}).get('error', 'n/a')} |",
+        f"| Flood map pages | {status['mapPages']['gauges']} gauges from {', '.join(status['mapPages']['pages']) or 'none'} |",
+        f"| 15-minute readings | {status['observations']['readings']} from {', '.join(status['observations']['files']) or 'none'} |",
+        f"| History tables | {'offered' if status['historyTables']['available'] else 'not offered'}, {status['historyTables']['fetched']} fetched |",
+        "", f"**{len(out_stations)} gauges**: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())),
+        f"{located} on the map · {with_levels} with flood levels · {with_history} with history",
+    ])
     return 0
 
 
