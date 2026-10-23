@@ -54,12 +54,14 @@ All data comes from BoM's **public data feed** for automated use, `ftp://ftp.bom
 | File | Gives |
 |---|---|
 | `IDQ60286.html` | the bulletin: areas, station order, gauge type, datum, BoM's flood class, tendency, crossing heights |
-| `IDQ65389.html` | BoM's flood-warning map page: each gauge's coordinates, latest level, and minor/moderate/major flood levels |
+| `IDQ65325.html` | BoM's flood-warning map page: each gauge's coordinates, latest level, and minor/moderate/major flood levels (about 200 of the 233 gauges) |
 | `IDQ65911_<time>.hcs` | 15-minute water levels for the last ~3 hours, every Queensland gauge |
 | `IDQ65910_<time>.hcs` | latest water level per gauge |
-| `IDQ65389/IDQ65389.<station>.tbl.shtml` | 7-day tables, used a few per run to fill early history, *only if the feed offers them* |
+| `IDQ65389/IDQ65389.<station>.tbl.shtml` | 7-day tables, used a few per run to fill early history, *only if the feed offers them* (it didn't as of October 2026, so history builds up from the first run) |
 
-Other `IDQ65xxx.html` map pages are scanned at most once a day, and only to find coordinates for gauges missing from `IDQ65389.html`.
+Other `IDQ65xxx.html` map pages are scanned at most once a day, and only to find gauges missing from `IDQ65325.html`; any page that supplies gauges is remembered and read on every run.
+
+Each run's results (which files were found, how many gauges got readings, coordinates and flood levels) appear as notes on the run's page under **Actions**.
 
 The collector keeps going if any single file is missing. Without the bulletin it uses the station list in `collector/stations.json` (built from the 22 October 2026 bulletin) and takes classes from the map page or works them out from BoM's flood levels. Each gauge in the page says where its class, tendency and flood levels came from.
 
@@ -111,4 +113,4 @@ python -m unittest discover -s tests                 # pip install pyftpdlib for
 python tools/make_preview.py preview.html            # single file with the labelled sample snapshot
 ```
 
-To cover a different BoM bulletin, save that bulletin's HTML, rebuild the station list with `tools/build_catalogue.py`, and change `BULLETIN` and `DEFAULT_MAP_PAGES` at the top of `collector/collect.py`.
+To cover a different BoM bulletin, save that bulletin's HTML, rebuild the station list with `tools/build_catalogue.py`, and change `BULLETIN`, `DEFAULT_MAP_PAGES` and `STATION_PRODUCT` at the top of `collector/collect.py`.

@@ -38,7 +38,11 @@ HERE = Path(__file__).resolve().parent
 FTP_HOST = "ftp.bom.gov.au"
 FTP_DIR = "/anon/gen/fwo"
 BULLETIN = "IDQ60286"
-DEFAULT_MAP_PAGES = ["IDQ65389"]
+# BoM flood-warning map page that carries coordinates and flood levels for these gauges
+# (found on the live feed 23 Oct 2026). Pages that worked before are remembered in meta.json.
+DEFAULT_MAP_PAGES = ["IDQ65325"]
+# Product id used in the bulletin's station plot/table links
+STATION_PRODUCT = "IDQ65389"
 HCS_PREFIXES = ["IDQ65911", "IDQ65910"]
 HISTORY_DAYS = 7
 FULL_SCAN_EVERY = timedelta(hours=24)
@@ -272,14 +276,15 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         wanted = set(stations)
 
         # 2. flood-warning map pages -----------------------------------------
-        pages = list(dict.fromkeys(DEFAULT_MAP_PAGES + sorted({s.get("product") for s in stations.values() if s.get("product")})))
+        remembered = [p for p in meta.get("mapPages", []) if isinstance(p, str) and re.fullmatch(r"IDQ65\d{3}", p)]
+        pages = list(dict.fromkeys(DEFAULT_MAP_PAGES + remembered))
         fetched_pages = []
 
         def read_map(page: str) -> None:
             text = src.get(f"{page}.html")
             found = bp.parse_map_page(text)
             fetched_pages.append(page)
-            if page in DEFAULT_MAP_PAGES:
+            if page in pages:
                 hit = sum(1 for sid in found if sid in wanted)
                 if not found:
                     i = text.find("Popup")
@@ -318,6 +323,8 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
                     break
             meta["lastFullScan"] = now.isoformat()
         status["mapPages"] = {"ok": bool(map_info), "pages": fetched_pages, "gauges": len(map_info)}
+        if map_info:
+            meta["mapPages"] = sorted({e["page"] for e in map_info.values()})
         if map_info:
             got_new_data = True
         for sid, entry in map_info.items():
@@ -359,7 +366,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         probe_at = iso_to_min(tables.get("checked"))
         listings: dict[str, set] = {}
         if tables.get("available") or probe_at is None or now_min - probe_at >= TABLE_PROBE_EVERY.total_seconds() / 60:
-            for product in sorted({s.get("product") or DEFAULT_MAP_PAGES[0] for s in stations.values()}):
+            for product in sorted({s.get("product") or STATION_PRODUCT for s in stations.values()}):
                 try:
                     found = {n for n in src.list(product) if n.endswith(".tbl.shtml")}
                 except (OSError, EOFError, ftplib.Error) as exc:
@@ -373,7 +380,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         for sid in sorted(wanted, key=lambda s: stations[s].get("order", 0)):
             if fetched_tables >= TABLES_PER_RUN:
                 break
-            product = stations[sid].get("product") or DEFAULT_MAP_PAGES[0]
+            product = stations[sid].get("product") or STATION_PRODUCT
             fname = f"{product}.{sid}.tbl.shtml"
             last_try = iso_to_min(tried.get(sid))
             if product not in listings or fname not in listings[product]:
@@ -494,7 +501,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         else:
             tendency, tend_src = computed_tendency(points), "computed"
 
-        product = st.get("product") or DEFAULT_MAP_PAGES[0]
+        product = st.get("product") or STATION_PRODUCT
         out_stations.append({
             "id": sid, "name": st.get("name"), "waterway": st.get("waterway"), "place": st.get("place"),
             "group": st.get("group"), "order": st.get("order"), "type": st.get("type"), "datum": st.get("datum"),

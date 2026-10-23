@@ -121,7 +121,7 @@ class CollectorRunTests(unittest.TestCase):
         # synthetic flood levels for one gauge so classification can be computed
         entries.append(("Kedron Brook at Gordon Park (McCord St)", "540478", "-27.41", "153.03", "9.31",
                         "Below Flood Level", "rising", "22-10-2026 10:10:00", "10.00", "11.00", "12.00"))
-        (self.feed / "IDQ65389.html").write_text(map_page(entries), encoding="utf-8")
+        (self.feed / "IDQ65325.html").write_text(map_page(entries), encoding="utf-8")
         (self.feed / "IDQ65911_20261022003500.hcs").write_text(hcs([
             ("WL", "540478", f"2026-10-22T00:{m:02d}:00Z", 9.31 + m / 100, "metres", "AHD") for m in (15, 30)
         ] + [
