@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SEQ River Watch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Live river heights and flood classes for the Brisbane, Pine and Caboolture rivers and tributaries, from the Bureau of Meteorology.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Leaflet 1.9.4 stylesheet (BSD-2-Clause, (c) Vladimir Agafonkin), minified, image rules removed */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0;}.leaflet-container{overflow:hidden;}.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none;}.leaflet-tile::selection{background:transparent;}.leaflet-safari .leaflet-tile{image-rendering:-webkit-optimize-contrast;}.leaflet-safari .leaflet-tile-container{width:1600px;height:1600px;-webkit-transform-origin:0 0;}.leaflet-marker-icon,.leaflet-marker-shadow{display:block;}.leaflet-container .leaflet-overlay-pane svg{max-width:none !important;max-height:none !important;}.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,.leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer,.leaflet-container .leaflet-tile{max-width:none !important;max-height:none !important;width:auto;padding:0;}.leaflet-container img.leaflet-tile{mix-blend-mode:plus-lighter;}.leaflet-container.leaflet-touch-zoom{-ms-touch-action:pan-x pan-y;touch-action:pan-x pan-y;}.leaflet-container.leaflet-touch-drag{-ms-touch-action:pinch-zoom;touch-action:none;touch-action:pinch-zoom;}.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{-ms-touch-action:none;touch-action:none;}.leaflet-container{-webkit-tap-highlight-color:transparent;}.leaflet-container a{-webkit-tap-highlight-color:rgba(51,181,229,0.4);}.leaflet-tile{filter:inherit;visibility:hidden;}.leaflet-tile-loaded{visibility:inherit;}.leaflet-zoom-box{width:0;height:0;-moz-box-sizing:border-box;box-sizing:border-box;z-index:800;}.leaflet-overlay-pane svg{-moz-user-select:none;}.leaflet-pane{z-index:400;}.leaflet-tile-pane{z-index:200;}.leaflet-overlay-pane{z-index:400;}.leaflet-shadow-pane{z-index:500;}.leaflet-marker-pane{z-index:600;}.leaflet-tooltip-pane{z-index:650;}.leaflet-popup-pane{z-index:700;}.leaflet-map-pane canvas{z-index:100;}.leaflet-map-pane svg{z-index:200;}.leaflet-vml-shape{width:1px;height:1px;}.lvml{display:inline-block;position:absolute;}.leaflet-control{position:relative;z-index:800;pointer-events:visiblePainted;pointer-events:auto;}.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none;}.leaflet-top{top:0;}.leaflet-right{right:0;}.leaflet-bottom{bottom:0;}.leaflet-left{left:0;}.leaflet-control{float:left;clear:both;}.leaflet-right .leaflet-control{float:right;}.leaflet-top .leaflet-control{margin-top:10px;}.leaflet-bottom .leaflet-control{margin-bottom:10px;}.leaflet-left .leaflet-control{margin-left:10px;}.leaflet-right .leaflet-control{margin-right:10px;}.leaflet-fade-anim .leaflet-popup{opacity:0;-webkit-transition:opacity 0.2s linear;-moz-transition:opacity 0.2s linear;transition:opacity 0.2s linear;}.leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1;}.leaflet-zoom-animated{-webkit-transform-origin:0 0;-ms-transform-origin:0 0;transform-origin:0 0;}svg.leaflet-zoom-animated{will-change:transform;}.leaflet-zoom-anim .leaflet-zoom-animated{-webkit-transition:-webkit-transform 0.25s cubic-bezier(0,0,0.25,1);-moz-transition:-moz-transform 0.25s cubic-bezier(0,0,0.25,1);transition:transform 0.25s cubic-bezier(0,0,0.25,1);}.leaflet-zoom-anim .leaflet-tile,.leaflet-pan-anim .leaflet-tile{-webkit-transition:none;-moz-transition:none;transition:none;}.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden;}.leaflet-interactive{cursor:pointer;}.leaflet-grab{cursor:-webkit-grab;cursor:-moz-grab;cursor:grab;}.leaflet-crosshair,.leaflet-crosshair .leaflet-interactive{cursor:crosshair;}.leaflet-popup-pane,.leaflet-control{cursor:auto;}.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive,.leaflet-dragging .leaflet-marker-draggable{cursor:move;cursor:-webkit-grabbing;cursor:-moz-grabbing;cursor:grabbing;}.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-image-layer,.leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none;}.leaflet-marker-icon.leaflet-interactive,.leaflet-image-layer.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive,svg.leaflet-image-layer.leaflet-interactive path{pointer-events:visiblePainted;pointer-events:auto;}.leaflet-container{background:#ddd;outline-offset:1px;}.leaflet-container a{color:#0078A8;}.leaflet-zoom-box{border:2px dotted #38f;background:rgba(255,255,255,0.5);}.leaflet-container{font-family:"Helvetica Neue",Arial,Helvetica,sans-serif;font-size:12px;font-size:0.75rem;line-height:1.5;}.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,0.65);border-radius:4px;}.leaflet-bar a{background-color:#fff;border-bottom:1px solid #ccc;width:26px;height:26px;line-height:26px;display:block;text-align:center;text-decoration:none;color:black;}.leaflet-bar a,.leaflet-control-layers-toggle{background-position:50% 50%;background-repeat:no-repeat;display:block;}.leaflet-bar a:hover,.leaflet-bar a:focus{background-color:#f4f4f4;}.leaflet-bar a:first-child{border-top-left-radius:4px;border-top-right-radius:4px;}.leaflet-bar a:last-child{border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-bottom:none;}.leaflet-bar a.leaflet-disabled{cursor:default;background-color:#f4f4f4;color:#bbb;}.leaflet-touch .leaflet-bar a{width:30px;height:30px;line-height:30px;}.leaflet-touch .leaflet-bar a:first-child{border-top-left-radius:2px;border-top-right-radius:2px;}.leaflet-touch .leaflet-bar a:last-child{border-bottom-left-radius:2px;border-bottom-right-radius:2px;}.leaflet-control-zoom-in,.leaflet-control-zoom-out{font:bold 18px 'Lucida Console',Monaco,monospace;text-indent:1px;}.leaflet-touch .leaflet-control-zoom-in,.leaflet-touch .leaflet-control-zoom-out{font-size:22px;}.leaflet-control-layers{box-shadow:0 1px 5px rgba(0,0,0,0.4);background:#fff;border-radius:5px;}.leaflet-control-layers-toggle{width:36px;height:36px;}.leaflet-retina .leaflet-control-layers-toggle{background-size:26px 26px;}.leaflet-touch .leaflet-control-layers-toggle{width:44px;height:44px;}.leaflet-control-layers .leaflet-control-layers-list,.leaflet-control-layers-expanded .leaflet-control-layers-toggle{display:none;}.leaflet-control-layers-expanded .leaflet-control-layers-list{display:block;position:relative;}.leaflet-control-layers-expanded{padding:6px 10px 6px 6px;color:#333;background:#fff;}.leaflet-control-layers-scrollbar{overflow-y:scroll;overflow-x:hidden;padding-right:5px;}.leaflet-control-layers-selector{margin-top:2px;position:relative;top:1px;}.leaflet-control-layers label{display:block;font-size:13px;font-size:1.08333em;}.leaflet-control-layers-separator{height:0;border-top:1px solid #ddd;margin:5px -10px 5px -6px;}.leaflet-container .leaflet-control-attribution{background:#fff;background:rgba(255,255,255,0.8);margin:0;}.leaflet-control-attribution,.leaflet-control-scale-line{padding:0 5px;color:#333;line-height:1.4;}.leaflet-control-attribution a{text-decoration:none;}.leaflet-control-attribution a:hover,.leaflet-control-attribution a:focus{text-decoration:underline;}.leaflet-attribution-flag{display:inline !important;vertical-align:baseline !important;width:1em;height:0.6669em;}.leaflet-left .leaflet-control-scale{margin-left:5px;}.leaflet-bottom .leaflet-control-scale{margin-bottom:5px;}.leaflet-control-scale-line{border:2px solid #777;border-top:none;line-height:1.1;padding:2px 5px 1px;white-space:nowrap;-moz-box-sizing:border-box;box-sizing:border-box;background:rgba(255,255,255,0.8);text-shadow:1px 1px #fff;}.leaflet-control-scale-line:not(:first-child){border-top:2px solid #777;border-bottom:none;margin-top:-2px;}.leaflet-control-scale-line:not(:first-child):not(:last-child){border-bottom:2px solid #777;}.leaflet-touch .leaflet-control-attribution,.leaflet-touch .leaflet-control-layers,.leaflet-touch .leaflet-bar{box-shadow:none;}.leaflet-touch .leaflet-control-layers,.leaflet-touch .leaflet-bar{border:2px solid rgba(0,0,0,0.2);background-clip:padding-box;}.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px;}.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:12px;}.leaflet-popup-content{margin:13px 24px 13px 20px;line-height:1.3;font-size:13px;font-size:1.08333em;min-height:1px;}.leaflet-popup-content p{margin:17px 0;margin:1.3em 0;}.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none;}.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;pointer-events:auto;-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);transform:rotate(45deg);}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:white;color:#333;box-shadow:0 3px 14px rgba(0,0,0,0.4);}.leaflet-container a.leaflet-popup-close-button{position:absolute;top:0;right:0;border:none;text-align:center;width:24px;height:24px;font:16px/24px Tahoma,Verdana,sans-serif;color:#757575;text-decoration:none;background:transparent;}.leaflet-container a.leaflet-popup-close-button:hover,.leaflet-container a.leaflet-popup-close-button:focus{color:#585858;}.leaflet-popup-scrolled{overflow:auto;}.leaflet-oldie .leaflet-popup-content-wrapper{-ms-zoom:1;}.leaflet-oldie .leaflet-popup-tip{width:24px;margin:0 auto;-ms-filter:"progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678,M12=0.70710678,M21=-0.70710678,M22=0.70710678)";filter:progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678,M12=0.70710678,M21=-0.70710678,M22=0.70710678);}.leaflet-oldie .leaflet-control-zoom,.leaflet-oldie .leaflet-control-layers,.leaflet-oldie .leaflet-popup-content-wrapper,.leaflet-oldie .leaflet-popup-tip{border:1px solid #999;}.leaflet-div-icon{background:#fff;border:1px solid #666;}.leaflet-tooltip{position:absolute;padding:6px;background-color:#fff;border:1px solid #fff;border-radius:3px;color:#222;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.4);}.leaflet-tooltip.leaflet-interactive{cursor:pointer;pointer-events:auto;}.leaflet-tooltip-top:before,.leaflet-tooltip-bottom:before,.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{position:absolute;pointer-events:none;border:6px solid transparent;background:transparent;content:"";}.leaflet-tooltip-bottom{margin-top:6px;}.leaflet-tooltip-top{margin-top:-6px;}.leaflet-tooltip-bottom:before,.leaflet-tooltip-top:before{left:50%;margin-left:-6px;}.leaflet-tooltip-top:before{bottom:0;margin-bottom:-12px;border-top-color:#fff;}.leaflet-tooltip-bottom:before{top:0;margin-top:-12px;margin-left:-6px;border-bottom-color:#fff;}.leaflet-tooltip-left{margin-left:-6px;}.leaflet-tooltip-right{margin-left:6px;}.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{top:50%;margin-top:-6px;}.leaflet-tooltip-left:before{right:0;margin-right:-12px;border-left-color:#fff;}.leaflet-tooltip-right:before{left:0;margin-left:-12px;border-right-color:#fff;}@media print{.leaflet-control{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+</style>
+<style>
+/* Layout: map-led split view. Geographic map on the left; river-line schematics and the gauge board/hydrograph in a side panel. Stacks map-over-panel on phones. */
+:root {
+  --bg: #eef3f4;
+  --panel: #fbfcfc;
+  --ink: #102229;
+  --ink-2: #3f545c;
+  --ink-3: #687c84;
+  --rule: #d6e0e3;
+  --rule-strong: #b3c2c7;
+  --accent: #1c5d99;
+  --accent-wash: rgba(28, 93, 153, 0.10);
+  --sea: #d3e5ec;
+  --land: #f1f2ec;
+  --coast: #a9bcc1;
+  --river: #3b8bb1;
+  --chain: #4f9dc2;
+  --water-fill: rgba(59, 139, 177, 0.16);
+  --st-below: #2a8a80;
+  --st-minor: #f2b01e;
+  --st-moderate: #ec7d4a;
+  --st-major: #d03b3b;
+  --st-none: #97a4a9;
+  --on-status: #ffffff;
+  --on-minor: #1a1405;
+  --marker-ring: #ffffff;
+  --marker-shadow: 0 1px 2px rgba(16, 34, 41, 0.45);
+  --streets-filter: none;
+  --raster-filter: none;
+  --banner: #fff4d6;
+  --banner-ink: #5a4100;
+  --shadow: 0 1px 2px rgba(16, 34, 41, 0.08), 0 4px 16px rgba(16, 34, 41, 0.08);
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Barlow", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1417; --panel: #111c21; --ink: #e4edef; --ink-2: #a7b8bd; --ink-3: #7a8d93;
+    --rule: #22333a; --rule-strong: #34474f; --accent: #6fb2e6; --accent-wash: rgba(111, 178, 230, 0.14);
+    --sea: #0a1b23; --land: #16232a; --coast: #2d4049; --river: #4b9fc9; --chain: #5db0d6;
+    --water-fill: rgba(75, 159, 201, 0.20);
+    --st-below: #3aa99c; --st-minor: #f2b01e; --st-moderate: #ee8a5c; --st-major: #e05252; --st-none: #6d7d83;
+    --on-status: #ffffff; --on-minor: #1a1405; --banner: #3a2f10; --banner-ink: #f6dc97;
+    --marker-ring: #ffffff; --marker-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+    --streets-filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.88) saturate(0.6); --raster-filter: brightness(0.82);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1417; --panel: #111c21; --ink: #e4edef; --ink-2: #a7b8bd; --ink-3: #7a8d93;
+  --rule: #22333a; --rule-strong: #34474f; --accent: #6fb2e6; --accent-wash: rgba(111, 178, 230, 0.14);
+  --sea: #0a1b23; --land: #16232a; --coast: #2d4049; --river: #4b9fc9; --chain: #5db0d6;
+  --water-fill: rgba(75, 159, 201, 0.20);
+  --st-below: #3aa99c; --st-minor: #f2b01e; --st-moderate: #ee8a5c; --st-major: #e05252; --st-none: #6d7d83;
+  --on-status: #ffffff; --on-minor: #1a1405; --banner: #3a2f10; --banner-ink: #f6dc97;
+  --marker-ring: #ffffff; --marker-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+  --streets-filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.88) saturate(0.6); --raster-filter: brightness(0.82);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html, body { height: 100%; }
+body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.45 var(--font-body);
+  display: flex; flex-direction: column; min-height: 0;
+}
+button { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+/* ---------- header */
+.top {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+}
+.brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; flex-wrap: wrap; }
+.brand h1 {
+  margin: 0; font: 700 26px/1 var(--font-display); letter-spacing: 0.01em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 9px;
+}
+.brand h1 svg { width: 24px; height: 24px; flex: none; }
+.brand p { margin: 0; color: var(--ink-2); font-size: 13.5px; }
+.summary { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; align-items: center; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 7px;
+  border: 1px solid var(--rule-strong); border-radius: 999px; background: transparent;
+  font-size: 13px; line-height: 1.2; cursor: pointer; white-space: nowrap;
+}
+.chip b { font-family: var(--font-data); font-weight: 500; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-wash); }
+.chip:disabled { cursor: default; opacity: .55; }
+.swatch { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1.5px var(--panel); }
+.sw-below { background: var(--st-below); } .sw-minor { background: var(--st-minor); }
+.sw-moderate { background: var(--st-moderate); } .sw-major { background: var(--st-major); }
+.sw-none { background: var(--st-none); }
+.stamp { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; }
+.stamp strong { color: var(--ink-2); font-weight: 500; }
+.stamp.stale strong { color: var(--st-major); }
+
+.banner {
+  padding-block: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--banner); color: var(--banner-ink); font-size: 13.5px;
+  border-bottom: 1px solid var(--rule);
+}
+.banner b { font-weight: 600; }
+
+/* ---------- main split */
+.app { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 460px); }
+.map-wrap { position: relative; min-height: 0; min-width: 0; }
+#map { position: absolute; inset: 0; background: var(--sea); }
+.panel { min-height: 0; min-width: 0; overflow-y: auto; background: var(--panel); border-left: 1px solid var(--rule); display: flex; flex-direction: column; }
+
+/* map overlays */
+.map-legend {
+  position: absolute; left: 12px; bottom: 26px; z-index: 500;
+  background: var(--panel); color: var(--ink-2); border: 1px solid var(--rule); border-radius: 8px;
+  padding: 6px 10px; font-size: 12px; box-shadow: var(--shadow); max-width: 220px;
+}
+.map-legend summary { cursor: pointer; font-weight: 600; color: var(--ink); padding: 2px 0; }
+.map-legend[open] summary { margin-bottom: 4px; }
+.legend-body { display: grid; gap: 4px; padding-bottom: 2px; }
+.map-legend .row { display: flex; align-items: center; gap: 7px; }
+.map-legend .shape { width: 18px; height: 18px; flex: none; display: inline-grid; place-items: center; }
+.map-legend .shape svg { display: block; }
+.map-legend hr { border: 0; border-top: 1px solid var(--rule); margin: 3px 0; }
+.map-tools { position: absolute; right: 12px; top: 12px; z-index: 500; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 64px); }
+.tool {
+  background: var(--panel); border: 1px solid var(--rule-strong); border-radius: 6px; padding: 5px 10px;
+  font-size: 13px; cursor: pointer; box-shadow: var(--shadow);
+}
+.tool[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.leaflet-container { font: 13px/1.4 var(--font-body); background: var(--sea); }
+.leaflet-bar a { background: var(--panel); color: var(--ink); border-bottom-color: var(--rule); }
+.leaflet-bar a:hover { background: var(--bg); color: var(--ink); }
+.leaflet-bar { border: 1px solid var(--rule-strong) !important; box-shadow: var(--shadow) !important; }
+.leaflet-control-attribution { background: color-mix(in srgb, var(--panel) 80%, transparent) !important; color: var(--ink-3); font-size: 10.5px; }
+.leaflet-control-attribution a { color: var(--ink-2); }
+.leaflet-tooltip.rw-tip {
+  background: var(--panel); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 6px;
+  box-shadow: var(--shadow); padding: 6px 9px; font-size: 12.5px; line-height: 1.35; white-space: nowrap;
+}
+.leaflet-tooltip.rw-tip::before { display: none; }
+.rw-tip .t-name { font-weight: 600; }
+.rw-tip .t-row { color: var(--ink-2); display: flex; gap: 6px; align-items: center; }
+.rw-land { fill: var(--land); fill-opacity: 1; stroke: var(--coast); stroke-width: 1; stroke-opacity: 1; }
+.rw-lake { fill: var(--sea); fill-opacity: 1; stroke: var(--river); stroke-width: 0.8; stroke-opacity: .6; }
+.rw-river { stroke: var(--river); stroke-width: 2.4; fill: none; stroke-opacity: .55; stroke-linecap: round; stroke-linejoin: round; }
+.rw-chain { stroke: var(--chain); stroke-width: 2; fill: none; stroke-opacity: .85; stroke-linecap: round; stroke-linejoin: round; }
+.rw-chain.dim { stroke-opacity: .25; }
+#map[data-basemap]:not([data-basemap="outline"]) { background: var(--land); }
+#map[data-basemap]:not([data-basemap="outline"]) .rw-land,
+#map[data-basemap]:not([data-basemap="outline"]) .rw-lake,
+#map[data-basemap]:not([data-basemap="outline"]) .rw-river { fill-opacity: 0; stroke-opacity: 0; }
+.rw-tiles-streets { filter: var(--streets-filter); }
+.rw-tiles-topo, .rw-tiles-aerial { filter: var(--raster-filter); }
+.maplibregl-map { overflow: hidden; position: relative; }
+.maplibregl-canvas { left: 0; position: absolute; top: 0; }
+.rw-marker { background: none; border: 0; }
+.rw-marker svg { display: block; overflow: visible; filter: drop-shadow(var(--marker-shadow)); }
+.rw-label { background: none; border: 0; }
+.rw-label-in {
+  display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 5px;
+  padding: 2px 7px; font-size: 12.5px; line-height: 18px; box-shadow: var(--shadow);
+}
+.rw-label-in b { font-weight: 500; }
+.rw-label.sel .rw-label-in { border-color: var(--accent); }
+.rw-label.collide { visibility: hidden; }
+/* Moderate and major gauges stay labelled at every zoom; minor ones once zoomed in a little. */
+#map[data-zoom="out"] .rw-label.r-minor:not(.sel) { display: none; }
+#map[data-zoom="out"] .rw-marker:not(.keep) svg { transform: scale(0.62); }
+#map[data-zoom="mid"] .rw-marker:not(.keep) svg { transform: scale(0.8); }
+.map-note {
+  position: absolute; right: 12px; top: 54px; z-index: 500; margin: 0; max-width: 240px;
+  background: var(--panel); color: var(--ink-2); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 5px 9px; font-size: 12px; box-shadow: var(--shadow);
+}
+.map-tools .seg { background: var(--panel); box-shadow: var(--shadow); }
+.map-tools .seg button { padding: 5px 10px; font-size: 13px; }
+.rw-marker.dim { opacity: .28; }
+.rw-marker:focus-visible { outline: none; }
+.rw-marker:focus-visible svg .ring { stroke: var(--accent); }
+
+/* ---------- panel: tabs and filters */
+.panel-head {
+  position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--rule);
+  padding-block: 10px 0; padding-left: 16px; padding-right: 16px; display: grid; gap: 10px;
+}
+.tabs { display: flex; gap: 2px; }
+.tab {
+  border: 0; background: none; padding: 8px 12px 9px; cursor: pointer; color: var(--ink-3);
+  font: 600 17px/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.04em;
+  border-bottom: 3px solid transparent;
+}
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab:disabled { opacity: .45; cursor: default; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.search {
+  flex: 1 1 180px; min-width: 0; border: 1px solid var(--rule-strong); border-radius: 6px;
+  background: var(--bg); color: var(--ink); padding: 7px 10px; font: inherit; font-size: 14px;
+}
+.select {
+  border: 1px solid var(--rule-strong); border-radius: 6px; background: var(--bg); color: var(--ink);
+  padding: 7px 8px; font: inherit; font-size: 14px; max-width: 100%;
+}
+.panel-body { padding-block: 14px 24px; padding-left: 16px; padding-right: 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+#view, .about, .area, .waterway, .g-head { min-width: 0; }
+#view { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-content: start; }
+
+/* ---------- rivers: line schematics */
+.area h2 {
+  margin: 0 0 4px; font: 700 20px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: 0.03em;
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+}
+.area h2 span { font: 500 13px/1 var(--font-body); color: var(--ink-3); text-transform: none; letter-spacing: 0; }
+.waterway { border-top: 1px solid var(--rule); padding-top: 10px; margin-top: 10px; }
+.ww-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ww-name { font-weight: 600; font-size: 15.5px; }
+.ww-meta { color: var(--ink-3); font-size: 12.5px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px 2px 6px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; line-height: 1.4; color: var(--on-status); white-space: nowrap;
+}
+.pill svg { width: 11px; height: 11px; }
+.pill.cls-below { background: var(--st-below); }
+.pill.cls-minor { background: var(--st-minor); color: var(--on-minor); }
+.pill.cls-moderate { background: var(--st-moderate); }
+.pill.cls-major { background: var(--st-major); }
+.pill.cls-none { background: transparent; color: var(--ink-3); border: 1px solid var(--rule-strong); }
+.line-scroll { overflow-x: auto; margin-top: 8px; padding-bottom: 6px; scrollbar-width: thin; }
+ol.line { list-style: none; margin: 0; padding: 0; display: flex; width: max-content; min-width: 100%; }
+ol.singles { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 2px; }
+.stop.single, ol.singles .stop { width: auto; }
+ol.singles .stop-track::before { display: none; }
+.stop.single .stop-name { -webkit-line-clamp: 3; min-height: 3.75em; }
+.stop.single .stop-name b { display: block; font-weight: 600; }
+.stop { width: 96px; flex: none; position: relative; }
+.stop button {
+  width: 100%; border: 0; background: none; cursor: pointer; padding: 4px 4px 6px; border-radius: 6px;
+  display: grid; justify-items: center; gap: 3px; text-align: center;
+}
+.stop button:hover { background: var(--accent-wash); }
+.stop.selected button { background: var(--accent-wash); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.stop.dim button { opacity: .38; }
+.stop-val { font: 500 13px/1.2 var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; display: inline-flex; gap: 3px; align-items: center; }
+.stop-val small { font-size: 10px; color: var(--ink-3); }
+.stop-val .arrow { width: 9px; height: 9px; }
+.stop-track { position: relative; width: 100%; height: 20px; display: grid; place-items: center; }
+.stop-track::before {
+  content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 4px; margin-top: -2px;
+  background: var(--chain); opacity: .55;
+}
+.stop:first-child .stop-track::before { left: 50%; }
+.stop:last-child .stop-track::before { right: 50%; }
+.stop:only-child .stop-track::before { display: none; }
+.node { position: relative; width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 2px var(--panel); background: var(--st-none); }
+.node.cls-below { background: var(--st-below); } .node.cls-minor { background: var(--st-minor); width: 18px; height: 18px; }
+.node.cls-moderate { background: var(--st-moderate); width: 18px; height: 18px; } .node.cls-major { background: var(--st-major); width: 20px; height: 20px; }
+.node.cls-none { background: var(--panel); box-shadow: 0 0 0 2px var(--st-none); }
+.stop-name { font-size: 12px; line-height: 1.25; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.5em; }
+.stop-rel { font-size: 11px; color: var(--ink-3); line-height: 1.2; }
+.empty { color: var(--ink-2); padding: 18px 0; }
+
+/* ---------- gauge detail */
+.g-head { display: grid; gap: 4px; }
+.g-eyebrow { font-size: 12px; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
+.g-title { margin: 0; font: 700 26px/1.05 var(--font-display); text-wrap: balance; }
+.g-sub { color: var(--ink-2); font-size: 13.5px; }
+.g-reading { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: stretch; }
+.board { width: 66px; }
+.board svg { display: block; width: 66px; height: 210px; overflow: visible; }
+.board text { font: 10px var(--font-data); fill: var(--ink-3); }
+.g-figures { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.hero { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.hero .v { font: 600 52px/1 var(--font-body); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.hero .u { font: 500 15px var(--font-data); color: var(--ink-2); }
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 13.5px; }
+.facts dt { color: var(--ink-3); }
+.facts dd { margin: 0; color: var(--ink); min-width: 0; }
+.tend { display: inline-flex; align-items: center; gap: 5px; }
+.tend svg { width: 12px; height: 12px; }
+.levels { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.levels th, .levels td { text-align: left; padding: 5px 0; border-bottom: 1px solid var(--rule); }
+.levels th { color: var(--ink-3); font-weight: 500; font-size: 12px; }
+.levels td.num, .levels th.num { text-align: right; }
+.levels .lab { display: inline-flex; align-items: center; gap: 7px; }
+.levels tr.reached td { font-weight: 600; }
+.section-title { margin: 0 0 6px; font: 700 16px/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-2); }
+.chart-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.seg { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: none; padding: 4px 10px; font-size: 12.5px; cursor: pointer; color: var(--ink-2); }
+.seg button + button { border-left: 1px solid var(--rule-strong); }
+.seg button[aria-pressed="true"] { background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+.hydro { position: relative; }
+.hydro svg { display: block; width: 100%; overflow: visible; }
+.hydro .grid line { stroke: var(--rule); stroke-width: 1; }
+.hydro .axis text { font: 10.5px var(--font-data); fill: var(--ink-3); }
+.hydro .area { fill: var(--water-fill); }
+.hydro .series { fill: none; stroke: var(--river); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.hydro .thr line { stroke-width: 1.5; }
+.hydro .thr text { font: 600 10.5px var(--font-body); }
+.hydro .cross line { stroke: var(--ink-3); stroke-width: 1; }
+.hydro .hover-dot, .hydro .end-dot { stroke: var(--panel); stroke-width: 2; fill: var(--river); }
+.hydro .end-label { font: 500 11px var(--font-data); fill: var(--ink); }
+.hydro-tip {
+  position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--rule-strong);
+  border-radius: 6px; box-shadow: var(--shadow); padding: 5px 8px; font-size: 12px; white-space: nowrap; transform: translate(-50%, -100%);
+}
+.hydro-tip .num { font-weight: 500; }
+.hydro-empty { border: 1px dashed var(--rule-strong); border-radius: 8px; padding: 16px; color: var(--ink-2); font-size: 13.5px; }
+.links { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13.5px; }
+details.readings summary { cursor: pointer; color: var(--accent); font-size: 13.5px; }
+.readings-table { max-height: 260px; overflow-y: auto; margin-top: 8px; border: 1px solid var(--rule); border-radius: 6px; }
+.readings-table table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.readings-table td, .readings-table th { padding: 4px 10px; border-bottom: 1px solid var(--rule); text-align: left; }
+.readings-table th { position: sticky; top: 0; background: var(--panel); color: var(--ink-3); font-weight: 500; }
+.readings-table td.num { text-align: right; }
+.back { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font-size: 13.5px; justify-self: start; }
+
+/* ---------- about */
+.about { border-top: 1px solid var(--rule); padding-top: 14px; color: var(--ink-2); font-size: 13px; display: grid; gap: 10px; }
+.about h2 { margin: 0; font: 700 16px/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-2); }
+.about p { margin: 0; max-width: 62ch; }
+.about dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 10px; }
+.about dt { display: inline-flex; gap: 6px; align-items: center; font-weight: 600; color: var(--ink); }
+.about dd { margin: 0; }
+.src-ok { color: var(--st-below); font-weight: 600; } .src-bad { color: var(--st-major); font-weight: 600; }
+
+@media (max-width: 860px) {
+  body { display: block; height: auto; }
+  .app { display: flex; flex-direction: column; }
+  .map-wrap { height: 48vh; min-height: 300px; }
+  .panel { border-left: 0; border-top: 1px solid var(--rule); overflow: visible; }
+  .panel-head { position: static; }
+  .summary { margin-left: 0; }
+  .map-legend { bottom: 22px; left: 8px; font-size: 11.5px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="20" rx="1" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 6h3M9 10h4M9 14h3M9 18h4" stroke="var(--ink)" stroke-width="1.4"/><path d="M1 15c2.2-1.6 4.4-1.6 6.6 0s4.4 1.6 6.6 0 4.4-1.6 6.6 0 2 1.2 2.2 1.2" fill="none" stroke="var(--river)" stroke-width="2.2" stroke-linecap="round"/></svg>SEQ River Watch</h1>
+    <p>Brisbane, Pine and Caboolture rivers and tributaries</p>
+  </div>
+  <div class="summary" id="summary" aria-label="Gauges by flood class"></div>
+  <div class="stamp" id="stamp"></div>
+</header>
+<div class="banner" id="banner" hidden></div>
+
+<main class="app">
+  <div class="map-wrap">
+    <div id="map" role="region" aria-label="Map of river height gauges"></div>
+    <div class="map-tools">
+      <div class="seg basemaps" id="basemaps" role="group" aria-label="Map style" hidden></div>
+      <button class="tool" id="fit" type="button">Fit gauges</button>
+    </div>
+    <p class="map-note" id="map-note" hidden></p>
+    <details class="map-legend" id="legend-box" open><summary>Map key</summary><div class="legend-body" id="legend"></div></details>
+  </div>
+  <section class="panel" aria-label="River details">
+    <div class="panel-head">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-rivers" aria-selected="true" aria-controls="view">Rivers</button>
+        <button class="tab" role="tab" id="tab-gauge" aria-selected="false" aria-controls="view" disabled>Gauge</button>
+      </div>
+      <div class="filters" id="filters">
+        <input class="search" id="q" type="search" placeholder="Search gauges or places" autocomplete="off" aria-label="Search gauges or places">
+        <select class="select" id="area" aria-label="Area"></select>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div id="view" role="tabpanel" aria-live="polite"></div>
+      <div class="about" id="about"></div>
+    </div>
+  </section>
+</main>
+
+<!-- Filled in by the preview build only; the live site loads data/latest.json -->
+<script type="application/json" id="embedded-data"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+(() => {
+"use strict";
+
+// ------------------------------------------------------------------ constants
+const TZ = "Australia/Brisbane";
+const CLASSES = {
+  major:    { label: "Major flood",       short: "Major",    rank: 4 },
+  moderate: { label: "Moderate flood",    short: "Moderate", rank: 3 },
+  minor:    { label: "Minor flood",       short: "Minor",    rank: 2 },
+  below:    { label: "Below flood level", short: "Below",    rank: 1 },
+  none:     { label: "No classification", short: "No class", rank: 0 },
+};
+const ORDER = ["major", "moderate", "minor", "below", "none"];
+const REFRESH_MS = 5 * 60 * 1000;
+const fmtTime = new Intl.DateTimeFormat("en-AU", { timeZone: TZ, hour: "numeric", minute: "2-digit", weekday: "short" });
+const fmtFull = new Intl.DateTimeFormat("en-AU", { timeZone: TZ, hour: "numeric", minute: "2-digit", weekday: "short", day: "numeric", month: "short", year: "numeric" });
+const fmtDay = new Intl.DateTimeFormat("en-AU", { timeZone: TZ, weekday: "short", day: "numeric" });
+const fmtHour = new Intl.DateTimeFormat("en-AU", { timeZone: TZ, hour: "numeric" });
+const fmtRow = new Intl.DateTimeFormat("en-AU", { timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+
+const $ = (sel) => document.querySelector(sel);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clsKey = (s) => (s && CLASSES[s.floodClass] ? s.floodClass : "none");
+const fmtH = (h) => (h == null ? "—" : h.toFixed(2));
+const lower = (s) => (s || "").toLowerCase();
+
+const S = {
+  latest: null, history: null, historyLoading: null, byId: new Map(),
+  selected: null, view: "rivers", area: "all", q: "", floodOnly: false,
+  range: 72, map: null, markers: new Map(), labels: new Map(), chains: [], embedded: null,
+  basemap: "outline", available: [], baseLayer: null, basemapBusy: false,
+};
+
+// ------------------------------------------------------------------ small svg helpers
+function tendencyPath(t, size = 12) {
+  const h = size / 2;
+  if (t === "rising") return `<path d="M${h} 1 L${size - 1} ${size - 2} L1 ${size - 2} Z"/>`;
+  if (t === "falling") return `<path d="M1 2 L${size - 1} 2 L${h} ${size - 1} Z"/>`;
+  return `<circle cx="${h}" cy="${h}" r="${h - 2}"/>`;
+}
+function arrowSvg(t, cls = "arrow") {
+  if (t !== "rising" && t !== "falling") return "";
+  return `<svg class="${cls}" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">${tendencyPath(t)}</svg>`;
+}
+function pill(key) {
+  const c = CLASSES[key];
+  const icon = key === "none" ? "" : `<svg viewBox="0 0 12 12" aria-hidden="true">${key === "below"
+    ? '<path d="M1 6.5c1.3-1 2.7-1 4 0s2.7 1 4 0 1.7-.6 2-.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
+    : '<path d="M6 1 L11 10.5 H1 Z" fill="currentColor"/>'}</svg>`;
+  return `<span class="pill cls-${key}">${icon}${c.short}</span>`;
+}
+// A round marker coloured by flood class, with an arrow inside when the river is rising or falling.
+function markerGlyph(key, tendency, size, selected) {
+  const c = size / 2;
+  const r = c - 2;
+  const fill = key === "none" ? "var(--panel)" : `var(--st-${key})`;
+  const ring = selected ? "var(--accent)" : key === "none" ? "var(--st-none)" : "var(--marker-ring)";
+  const ink = key === "minor" ? "var(--on-minor)" : key === "none" ? "var(--ink-2)" : "var(--on-status)";
+  const a = r * 0.58;
+  let arrow = "";
+  if (tendency === "rising") arrow = `<path d="M${c} ${c - a} L${c + a} ${c + a * 0.62} L${c - a} ${c + a * 0.62} Z" fill="${ink}"/>`;
+  else if (tendency === "falling") arrow = `<path d="M${c - a} ${c - a * 0.62} L${c + a} ${c - a * 0.62} L${c} ${c + a} Z" fill="${ink}"/>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle class="ring" cx="${c}" cy="${c}" r="${r}" fill="${fill}" stroke="${ring}" stroke-width="${selected ? 3 : 2}"/>${arrow}</svg>`;
+}
+function markerSize(st, selected) {
+  const rank = CLASSES[clsKey(st)].rank;
+  return (rank >= 4 ? 28 : rank >= 2 ? 24 : rank === 1 ? 18 : 15) + (selected ? 4 : 0);
+}
+function markerClass(st, selected = st.id === S.selected) {
+  return `rw-marker${CLASSES[clsKey(st)].rank >= 2 || selected ? " keep" : ""}`;
+}
+function markerSvg(st, selected) {
+  const size = markerSize(st, selected);
+  return { html: markerGlyph(clsKey(st), st.tendency, size, selected), size };
+}
+
+// ------------------------------------------------------------------ time helpers
+const minToDate = (m) => new Date(m * 60000);
+function nowMs() {
+  if (S.latest?.demo) return Date.parse(S.latest.generated);
+  return Date.now();
+}
+function ago(iso) {
+  if (!iso) return "";
+  const mins = Math.round((nowMs() - Date.parse(iso)) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const h = Math.round(mins / 60);
+  if (h < 36) return `${h} h ago`;
+  return `${Math.round(h / 24)} days ago`;
+}
+const tFmt = (iso) => (iso ? fmtTime.format(new Date(iso)).replace(/\s?(am|pm)/i, (m) => m.trim().toLowerCase()) : "—");
+
+// ------------------------------------------------------------------ data loading
+function readEmbedded() {
+  const el = document.getElementById("embedded-data");
+  const txt = el && el.textContent.trim();
+  if (!txt) return null;
+  try { return JSON.parse(txt); } catch (e) { return null; }
+}
+async function loadLatest() {
+  if (S.embedded) return S.embedded.latest;
+  const res = await fetch(`data/latest.json?t=${Date.now()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`data/latest.json returned ${res.status}`);
+  return res.json();
+}
+function loadHistory(force) {
+  if (S.embedded) { S.history = S.embedded.history || { series: {} }; return Promise.resolve(S.history); }
+  if (S.historyLoading && !force) return S.historyLoading;
+  S.historyLoading = fetch(`data/history.json?t=${Date.now()}`, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : { series: {} }))
+    .catch(() => ({ series: {} }))
+    .then((h) => (S.history = h));
+  return S.historyLoading;
+}
+
+// ------------------------------------------------------------------ filtering
+function matches(st) {
+  if (S.area !== "all" && st.group !== S.area) return false;
+  if (S.floodOnly && CLASSES[clsKey(st)].rank < 2) return false;
+  if (S.q) {
+    const hay = lower(`${st.name} ${st.waterway} ${st.place} ${st.group}`);
+    if (!S.q.split(/\s+/).every((w) => hay.includes(w))) return false;
+  }
+  return true;
+}
+
+// ------------------------------------------------------------------ header
+function renderHeader() {
+  const L = S.latest;
+  const counts = Object.fromEntries(ORDER.map((k) => [k, 0]));
+  L.stations.forEach((s) => counts[clsKey(s)]++);
+  const flooding = counts.major + counts.moderate + counts.minor;
+  const chips = ORDER.filter((k) => k !== "none" || counts.none).map((k) =>
+    `<span class="chip" style="cursor:default" title="${CLASSES[k].label}"><span class="swatch sw-${k}"></span>${CLASSES[k].short} <b>${counts[k]}</b></span>`);
+  chips.unshift(`<button class="chip" id="flood-only" type="button" aria-pressed="${S.floodOnly}" ${flooding ? "" : "disabled"}
+    title="Show only gauges at or above minor flood level">At or above minor <b>${flooding}</b></button>`);
+  $("#summary").innerHTML = chips.join("");
+  const btn = $("#flood-only");
+  btn.addEventListener("click", () => { S.floodOnly = !S.floodOnly; btn.setAttribute("aria-pressed", S.floodOnly); applyFilters(); });
+
+  const gen = L.generated;
+  const stale = !L.demo && (Date.now() - Date.parse(gen)) > 60 * 60000;
+  const stamp = $("#stamp");
+  stamp.className = "stamp" + (stale ? " stale" : "");
+  stamp.innerHTML = L.demo
+    ? `Snapshot <strong>${esc(fmtFull.format(new Date(L.bulletin?.issued || gen)))}</strong>`
+    : `Updated <strong>${esc(tFmt(gen))}</strong> · ${esc(ago(gen))}`;
+
+  const banner = $("#banner");
+  if (L.demo) {
+    banner.innerHTML = `<b>Sample data, not live.</b> Real BoM readings from the bulletin issued ${esc(fmtFull.format(new Date(L.bulletin.issued)))}. Once deployed, this page refreshes from BoM every 15 minutes and fills in flood levels and 7-day histories for every gauge.`;
+    banner.hidden = false;
+  } else if (stale) {
+    banner.innerHTML = `<b>These heights may be out of date.</b> The last update was ${esc(ago(gen))}. BoM's feed or the scheduled update may be delayed. Check the <a href="https://www.bom.gov.au/qld/warnings/">BoM Queensland warnings</a> page.`;
+    banner.hidden = false;
+  } else banner.hidden = true;
+}
+
+// ------------------------------------------------------------------ map
+function initMap() {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const map = L.map("map", {
+    zoomControl: true, attributionControl: true, zoomAnimation: !reduce, fadeAnimation: !reduce,
+    minZoom: 8, maxZoom: 17, zoomSnap: 0.5,
+    maxBounds: [[-29.6, 149.2], [-25.0, 155.0]], maxBoundsViscosity: 0.8,
+  });
+  map.attributionControl.setPrefix(false);
+  map.attributionControl.addAttribution('Heights: <a href="https://www.bom.gov.au/" target="_blank" rel="noopener">Bureau of Meteorology</a>');
+  S.map = map;
+  map.createPane("base"); map.getPane("base").style.zIndex = 300;
+  map.createPane("chains"); map.getPane("chains").style.zIndex = 410;
+  map.createPane("labels"); map.getPane("labels").style.zIndex = 590;
+  map.getPane("labels").style.pointerEvents = "none";
+  const geo = S.geo;
+  if (geo) {
+    L.geoJSON(geo.land, { pane: "base", interactive: false, className: "rw-land" }).addTo(map);
+    L.geoJSON(geo.lakes, { pane: "base", interactive: false, className: "rw-lake" }).addTo(map);
+    L.geoJSON(geo.rivers, { pane: "base", interactive: false, className: "rw-river" }).addTo(map);
+  }
+  map.setView([-27.35, 152.75], 9);
+  const zoomState = () => {
+    const z = map.getZoom();
+    $("#map").dataset.zoom = z < 9.5 ? "out" : z < 11 ? "mid" : "in";
+  };
+  map.on("zoomend", () => { zoomState(); requestAnimationFrame(declutterLabels); });
+  zoomState();
+  $("#fit").addEventListener("click", () => fitVisible());
+  setOutlineAttribution(true);
+  probeBasemaps();
+}
+
+// ------------------------------------------------------------------ basemaps
+// Free basemaps that need no account or key. Each is offered only if it actually loads
+// for this visitor; the built-in outline map is always there as a fallback.
+const BASEMAPS = {
+  streets: {
+    label: "Streets", kind: "vector",
+    style: "https://tiles.openfreemap.org/styles/positron",
+    attribution: '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+  },
+  topo: {
+    label: "Topo", title: "Queensland Government topographic map", kind: "raster",
+    url: "https://spatial-gis.information.qld.gov.au/arcgis/rest/services/Basemaps/QldMap_Topo/MapServer/tile/{z}/{y}/{x}",
+    minNativeZoom: 4, maxNativeZoom: 19,
+    attribution: 'Topographic map © <a href="https://qldspatial.information.qld.gov.au/" target="_blank" rel="noopener">State of Queensland</a>',
+  },
+  aerial: {
+    label: "Aerial", title: "Queensland Government aerial imagery", kind: "raster",
+    url: "https://spatial-img.information.qld.gov.au/arcgis/rest/services/Basemaps/LatestStateProgram_AllUsers/ImageServer/tile/{z}/{y}/{x}",
+    minNativeZoom: 0, maxNativeZoom: 20,
+    attribution: 'Imagery © <a href="https://qldspatial.information.qld.gov.au/" target="_blank" rel="noopener">State of Queensland</a>',
+  },
+  outline: { label: "Outline", title: "Simple outline with gauges joined downstream", kind: "outline" },
+};
+const MAPLIBRE_SCRIPTS = [
+  "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js",
+  "https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js",
+];
+const PROBE_TILE = { z: 10, x: 947, y: 593 }; // central Brisbane
+
+function probeImage(url, ms = 8000) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const finish = (ok) => { clearTimeout(timer); img.onload = img.onerror = null; resolve(ok); };
+    const timer = setTimeout(() => finish(false), ms);
+    img.onload = () => finish(img.naturalWidth > 0);
+    img.onerror = () => finish(false);
+    img.src = url;
+  });
+}
+function probeStyle(url, ms = 8000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).then((r) => r.ok).catch(() => false).finally(() => clearTimeout(timer));
+}
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement("script");
+    el.src = src;
+    el.onload = resolve;
+    el.onerror = () => reject(new Error(`could not load ${src}`));
+    document.head.appendChild(el);
+  });
+}
+function tileUrl(key) {
+  const { z, x, y } = PROBE_TILE;
+  return BASEMAPS[key].url.replace("{z}", z).replace("{x}", x).replace("{y}", y);
+}
+function setOutlineAttribution(on) {
+  const text = 'Outline: <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a>';
+  if (on) S.map.attributionControl.addAttribution(text); else S.map.attributionControl.removeAttribution(text);
+}
+
+async function probeBasemaps() {
+  S.basemap = "outline";
+  S.available = [];
+  const results = await Promise.all([
+    probeStyle(BASEMAPS.streets.style).then((ok) => ok && "streets"),
+    probeImage(tileUrl("topo")).then((ok) => ok && "topo"),
+    probeImage(tileUrl("aerial")).then((ok) => ok && "aerial"),
+  ]);
+  S.available = results.filter(Boolean);
+  let saved = null;
+  try { saved = localStorage.getItem("rw-basemap"); } catch (e) { /* storage blocked */ }
+  const pick = saved === "outline" || S.available.includes(saved) ? saved : S.available[0] || "outline";
+  if (pick !== "outline") await setBasemap(pick);
+  else renderBasemapSwitch();
+}
+
+async function setBasemap(key) {
+  const bm = BASEMAPS[key];
+  if (!bm || S.basemapBusy) return;
+  S.basemapBusy = true;
+  let layer = null;
+  try {
+    if (bm.kind === "raster") {
+      layer = L.tileLayer(bm.url, {
+        minNativeZoom: bm.minNativeZoom, maxNativeZoom: bm.maxNativeZoom, maxZoom: 19,
+        attribution: bm.attribution, className: `rw-tiles rw-tiles-${key}`,
+      });
+    } else if (bm.kind === "vector") {
+      if (!L.maplibreGL) for (const src of MAPLIBRE_SCRIPTS) await loadScript(src);
+      layer = L.maplibreGL({ style: bm.style, attribution: bm.attribution, className: "rw-tiles rw-tiles-streets", interactive: false });
+    }
+    if (S.baseLayer) S.map.removeLayer(S.baseLayer);
+    S.baseLayer = layer;
+    if (layer) layer.addTo(S.map);
+  } catch (e) {
+    // e.g. WebGL is turned off in this browser: drop this option and use the next one.
+    S.basemapBusy = false;
+    S.available = S.available.filter((k) => k !== key);
+    return setBasemap(S.available[0] || "outline");
+  }
+  S.basemap = key;
+  S.basemapBusy = false;
+  $("#map").dataset.basemap = key;
+  setOutlineAttribution(key === "outline");
+  try { localStorage.setItem("rw-basemap", key); } catch (e) { /* storage blocked */ }
+  renderBasemapSwitch();
+  renderLegend();
+  if (S.latest) { renderMap(); applyFilters(); }
+}
+
+function renderBasemapSwitch() {
+  const box = $("#basemaps");
+  const note = $("#map-note");
+  const keys = S.available.length ? [...S.available, "outline"] : [];
+  box.hidden = !keys.length;
+  box.innerHTML = keys.map((k) => `<button type="button" data-k="${k}" aria-pressed="${S.basemap === k}" title="${esc(BASEMAPS[k].title || BASEMAPS[k].label)}">${BASEMAPS[k].label}</button>`).join("");
+  box.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => setBasemap(b.dataset.k)));
+  note.hidden = keys.length > 0;
+  note.textContent = S.latest?.demo || S.embedded
+    ? "Street, topographic and aerial maps appear on the live site."
+    : "Street and aerial maps couldn't load, so a simple outline is shown.";
+}
+
+function renderLabels() {
+  // Gauges at or above minor flood level (and the selected gauge) keep a visible label.
+  const map = S.map;
+  S.labels.forEach((l) => map.removeLayer(l));
+  S.labels.clear();
+  S.latest.stations.forEach((s) => {
+    if (s.lat == null) return;
+    const selected = s.id === S.selected;
+    if (CLASSES[clsKey(s)].rank < 2 && !selected) return;
+    const size = markerSize(s, selected);
+    const html = `<span class="rw-label-in"><b class="num">${fmtH(s.height)} m</b> ${esc(s.place || s.name)}</span>`;
+    const icon = L.divIcon({ className: `rw-label r-${clsKey(s)}${selected ? " sel" : ""}`, html, iconSize: null, iconAnchor: [-(size / 2 + 5), 12] });
+    const lab = L.marker([s.lat, s.lon], { icon, pane: "labels", interactive: false, keyboard: false }).addTo(map);
+    lab._id = s.id;
+    lab._rank = (selected ? 10 : 0) + CLASSES[clsKey(s)].rank;
+    S.labels.set(s.id, lab);
+  });
+  declutterLabels();
+}
+
+function declutterLabels() {
+  // When labels collide, keep the selected gauge and the more serious flood class.
+  const kept = [];
+  [...S.labels.values()].sort((a, b) => b._rank - a._rank).forEach((lab) => {
+    const el = lab.getElement();
+    if (!el) return;
+    el.classList.remove("collide");
+    const r = el.firstElementChild?.getBoundingClientRect();
+    if (!r || !r.width) return;
+    const hit = kept.some((k) => r.left < k.right && r.right > k.left && r.top < k.bottom && r.bottom > k.top);
+    if (hit) el.classList.add("collide"); else kept.push(r);
+  });
+}
+
+function renderMap() {
+  const map = S.map;
+  S.chains.forEach((c) => map.removeLayer(c));
+  S.chains = [];
+  // On the outline map, join each waterway's gauges in bulletin order (BoM lists them upstream to
+  // downstream). Real basemaps already show the rivers, so the joins are left off there.
+  const byWater = new Map();
+  if (S.basemap === "outline") S.latest.stations.forEach((s) => {
+    if (s.lat == null) return;
+    const k = `${s.group}|${s.waterway}`;
+    if (!byWater.has(k)) byWater.set(k, []);
+    byWater.get(k).push(s);
+  });
+  byWater.forEach((list) => {
+    if (list.length < 2) return;
+    const pts = list.sort((a, b) => a.order - b.order).map((s) => [s.lat, s.lon]);
+    const line = L.polyline(pts, { pane: "chains", interactive: false, className: "rw-chain" }).addTo(map);
+    line._stations = list.map((s) => s.id);
+    S.chains.push(line);
+  });
+
+  const seen = new Set();
+  S.latest.stations.forEach((s) => {
+    if (s.lat == null) return;
+    seen.add(s.id);
+    const { html, size } = markerSvg(s, s.id === S.selected);
+    const icon = L.divIcon({ html, className: markerClass(s), iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+    const rank = CLASSES[clsKey(s)].rank;
+    let m = S.markers.get(s.id);
+    if (!m) {
+      m = L.marker([s.lat, s.lon], { icon, title: s.name, alt: s.name, riseOnHover: true, keyboard: true }).addTo(map);
+      m.on("click", () => select(s.id, { fromMap: true }));
+      S.markers.set(s.id, m);
+    } else { m.setLatLng([s.lat, s.lon]); m.setIcon(icon); }
+    m.setZIndexOffset(rank * 1000 + (s.id === S.selected ? 10000 : 0));
+    m.unbindTooltip();
+    m.bindTooltip(tipHtml(s), { className: "rw-tip", direction: "top", offset: [0, -size / 2 - 2], opacity: 1 });
+  });
+  for (const [id, m] of S.markers) if (!seen.has(id)) { map.removeLayer(m); S.markers.delete(id); }
+  renderLabels();
+}
+
+function tipHtml(s) {
+  const key = clsKey(s);
+  return `<div class="t-name">${esc(s.name)}</div>
+    <div class="t-row"><span class="swatch sw-${key}"></span>${CLASSES[key].short} · <span class="num">${fmtH(s.height)} m ${esc(s.datum || "")}</span> ${s.tendency ? esc(s.tendency) : ""}</div>
+    <div class="t-row">${esc(tFmt(s.time))}</div>`;
+}
+
+function applyFilters() {
+  for (const [id, m] of S.markers) {
+    const el = m.getElement();
+    if (el) el.classList.toggle("dim", !matches(S.byId.get(id)));
+  }
+  S.chains.forEach((c) => {
+    const anyMatch = c._stations.some((id) => matches(S.byId.get(id)));
+    const el = c.getElement && c.getElement();
+    if (el) el.classList.toggle("dim", !anyMatch);
+  });
+  if (S.view === "rivers") renderRivers();
+}
+
+function fitVisible() {
+  const pts = S.latest.stations.filter((s) => s.lat != null && matches(s)).map((s) => [s.lat, s.lon]);
+  const all = pts.length ? pts : S.latest.stations.filter((s) => s.lat != null).map((s) => [s.lat, s.lon]);
+  if (all.length) S.map.fitBounds(all, { padding: [30, 30], maxZoom: 13 });
+}
+
+function renderLegend() {
+  const dot = (key, t) => `<span class="shape">${markerGlyph(key, t, 18, false)}</span>`;
+  const classes = ["major", "moderate", "minor", "below", "none"].map((k) =>
+    `<div class="row">${dot(k)}${CLASSES[k].label}</div>`).join("");
+  $("#legend").innerHTML = `${classes}<hr>
+    <div class="row">${dot("below", "rising")}Rising</div>
+    <div class="row">${dot("below", "falling")}Falling</div>
+    <div class="row">${dot("below")}Steady or not reported</div>
+    ${S.basemap === "outline" ? '<hr><div class="row"><svg class="shape" viewBox="0 0 18 18" aria-hidden="true"><path d="M1 9h16" stroke="var(--chain)" stroke-width="2.5"/></svg>Gauges joined downstream</div>' : ""}`;
+}
+
+// ------------------------------------------------------------------ rivers view
+function relText(s) {
+  const lv = s.levels || {};
+  if (s.height == null || lv.minor == null) return "";
+  const key = clsKey(s);
+  const next = key === "below" ? ["minor", lv.minor] : key === "minor" ? ["moderate", lv.moderate] : key === "moderate" ? ["major", lv.major] : null;
+  if (next && next[1] != null) {
+    const d = next[1] - s.height;
+    if (d >= 0) return `${d.toFixed(2)} m to ${next[0]}`;
+  }
+  const d = s.height - lv.minor;
+  return `${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(2)} m vs minor`;
+}
+
+function renderRivers() {
+  const L = S.latest;
+  const parts = [];
+  let shown = 0;
+  for (const g of L.groups) {
+    if (S.area !== "all" && g.name !== S.area) continue;
+    const stations = g.stations.map((id) => S.byId.get(id)).filter(Boolean);
+    const waters = [];
+    const index = new Map();
+    stations.forEach((s) => {
+      if (!index.has(s.waterway)) { index.set(s.waterway, []); waters.push(s.waterway); }
+      index.get(s.waterway).push(s);
+    });
+    const blocks = [];
+    let groupFlood = 0;
+    const stopHtml = (s, single) => {
+      const key = clsKey(s);
+      const label = `${s.name}: ${fmtH(s.height)} metres ${s.datum || ""}, ${CLASSES[key].label}${s.tendency ? ", " + s.tendency : ""}`;
+      const name = single && s.place ? `<b>${esc(s.waterway)}</b> ${esc(s.place)}` : esc(s.place || s.name);
+      return `<li class="stop${single ? " single" : ""}${s.id === S.selected ? " selected" : ""}${matches(s) ? "" : " dim"}" data-id="${esc(s.id)}">
+        <button type="button" aria-label="${esc(label)}">
+          <span class="stop-val">${fmtH(s.height)}${arrowSvg(s.tendency)}<small>${esc(s.datum || "")}</small></span>
+          <span class="stop-track"><span class="node cls-${key}"></span></span>
+          <span class="stop-name">${name}</span>
+          <span class="stop-rel">${esc(relText(s))}</span>
+        </button></li>`;
+    };
+    const worstOf = (list) => list.reduce((a, s) => (CLASSES[clsKey(s)].rank > CLASSES[a].rank ? clsKey(s) : a), "none");
+    const head = (title, list, meta) => {
+      const worst = worstOf(list);
+      return `<div class="ww-head"><span class="ww-name">${esc(title)}</span>${CLASSES[worst].rank >= 2 ? pill(worst) : ""}<span class="ww-meta">${meta}</span></div>`;
+    };
+    const count = (list) => {
+      groupFlood += list.filter((s) => CLASSES[clsKey(s)].rank >= 2).length;
+      shown += list.filter(matches).length;
+    };
+    // Waterways with one gauge are gathered into a compact grid so long runs of small creeks stay scannable.
+    let singles = [];
+    const flushSingles = () => {
+      const visible = singles.filter((s) => singles.length === 1 ? matches(s) : true);
+      if (singles.length === 1 && visible.length) {
+        const s = singles[0];
+        count(singles);
+        blocks.push(`<div class="waterway">${head(s.waterway, singles, "1 gauge")}<ol class="singles">${stopHtml(s, false)}</ol></div>`);
+      } else if (singles.length > 1 && singles.some(matches)) {
+        count(singles);
+        blocks.push(`<div class="waterway">${head("Other creeks and storages", singles, `${singles.length} gauges, one per waterway`)}
+          <ol class="singles">${singles.map((s) => stopHtml(s, true)).join("")}</ol></div>`);
+      }
+      singles = [];
+    };
+    for (const w of waters) {
+      const list = index.get(w);
+      if (list.length === 1) { singles.push(list[0]); continue; }
+      flushSingles();
+      if (!list.some(matches)) continue;
+      count(list);
+      blocks.push(`<div class="waterway">${head(w, list, `${list.length} gauges · upstream → downstream`)}
+        <div class="line-scroll"><ol class="line">${list.map((s) => stopHtml(s, false)).join("")}</ol></div></div>`);
+    }
+    flushSingles();
+    if (blocks.length) {
+      parts.push(`<section class="area"><h2>${esc(g.name)}<span>${g.stations.length} gauges${groupFlood ? ` · ${groupFlood} at or above minor` : ""}</span></h2>${blocks.join("")}</section>`);
+    }
+  }
+  const view = $("#view");
+  if (!parts.length) {
+    view.innerHTML = `<p class="empty">${S.floodOnly ? "No gauges are at or above minor flood level right now." : "No gauges match that search."}</p>`;
+    return;
+  }
+  view.innerHTML = parts.join("");
+  view.querySelectorAll(".stop").forEach((li) => li.querySelector("button").addEventListener("click", () => select(li.dataset.id)));
+}
+
+// ------------------------------------------------------------------ gauge view
+function boardSvg(s, lv) {
+  // A flood gauge board: coloured bands at BoM's minor / moderate / major levels, water up to the latest reading.
+  const H = 210, W = 66, top = 8, bottom = H - 10, x0 = 30, bw = 16;
+  const lvls = [lv.minor, lv.moderate, lv.major].filter((v) => v != null);
+  const hi = Math.max(...lvls, s.height ?? -Infinity);
+  const lo = Math.min(lv.minor - Math.max(1, (lvls[lvls.length - 1] - lv.minor) || 1), s.height ?? Infinity);
+  const max = hi + Math.max(0.3, (hi - lo) * 0.08);
+  const min = Math.floor(lo * 2) / 2;
+  const y = (v) => bottom - ((v - min) / (max - min)) * (bottom - top);
+  const bands = [
+    ["below", min, lv.minor], ["minor", lv.minor, lv.moderate ?? lv.major ?? max],
+    ["moderate", lv.moderate, lv.major ?? max], ["major", lv.major, max],
+  ].filter(([, a, b]) => a != null && b != null && b > a);
+  let out = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gauge board: ${fmtH(s.height)} metres against flood levels">`;
+  bands.forEach(([k, a, b]) => {
+    out += `<rect x="${x0}" y="${y(b)}" width="${bw}" height="${y(a) - y(b)}" fill="var(--st-${k})" opacity="${k === "below" ? 0.35 : 0.9}"/>`;
+  });
+  const step = max - min > 6 ? 1 : 0.5;
+  for (let v = Math.ceil(min / step) * step; v <= max; v += step) {
+    const yy = y(v);
+    const major = Math.abs(v - Math.round(v)) < 1e-6;
+    out += `<line x1="${x0 - (major ? 7 : 4)}" x2="${x0}" y1="${yy}" y2="${yy}" stroke="var(--ink-3)" stroke-width="1"/>`;
+    if (major) out += `<text x="${x0 - 9}" y="${yy + 3.5}" text-anchor="end">${v.toFixed(0)}</text>`;
+  }
+  out += `<rect x="${x0}" y="${top}" width="${bw}" height="${bottom - top}" fill="none" stroke="var(--ink-2)" stroke-width="1"/>`;
+  if (s.height != null) {
+    const yh = y(s.height);
+    out += `<rect x="${x0 + bw + 2}" y="${yh}" width="${W - x0 - bw - 2}" height="${bottom - yh}" fill="var(--water-fill)"/>`;
+    out += `<path d="M${x0 - 4} ${yh} H${W}" stroke="var(--river)" stroke-width="2.5"/>`;
+    out += `<path d="M${W} ${yh} l-6 -4 v8 z" fill="var(--river)"/>`;
+  }
+  return out + "</svg>";
+}
+
+function renderGauge() {
+  const s = S.byId.get(S.selected);
+  const view = $("#view");
+  if (!s) { view.innerHTML = '<p class="empty">Select a gauge on the map or in the river list.</p>'; return; }
+  const key = clsKey(s);
+  const lv = s.levels || {};
+  const hasLv = lv.minor != null;
+  const classNote = s.classSource === "computed"
+    ? "worked out from BoM's flood levels"
+    : s.classTime && s.timeSource === "feed" ? `BoM, as at ${tFmt(s.classTime)}` : "as reported by BoM";
+  const tendNote = s.tendencySource === "computed" ? " (last hour of readings)" : "";
+  const rows = [["minor", lv.minor], ["moderate", lv.moderate], ["major", lv.major]].filter(([, v]) => v != null).map(([k, v]) => {
+    const reached = s.height != null && s.height >= v;
+    const diff = s.height == null ? "" : `${s.height >= v ? "+" : "−"}${Math.abs(s.height - v).toFixed(2)}`;
+    return `<tr class="${reached ? "reached" : ""}"><td><span class="lab"><span class="swatch sw-${k}"></span>${CLASSES[k].label}</span></td><td class="num">${v.toFixed(2)}</td><td class="num">${diff}</td></tr>`;
+  }).join("");
+  const crossings = [
+    ...(s.crossing?.text ? [`${esc(s.crossing.text)} (from the bulletin)`] : []),
+    ...(s.crossings || []).map((c) => `${esc(c.name)} at ${c.level.toFixed(2)} m`),
+  ];
+
+  view.innerHTML = `
+    <button class="back" type="button" id="back">← All rivers</button>
+    <div class="g-head">
+      <div class="g-eyebrow">${esc(s.group)} · ${esc(s.type || "Gauge")} · No. ${esc(s.id)}</div>
+      <h2 class="g-title">${esc(s.name)}</h2>
+    </div>
+    <div class="g-reading">
+      ${hasLv ? `<div class="board">${boardSvg(s, lv)}</div>` : ""}
+      <div class="g-figures">
+        <div class="hero"><span class="v">${fmtH(s.height)}</span><span class="u">m ${esc(s.datum || "")}</span></div>
+        <div>${pill(key)}</div>
+        <dl class="facts">
+          <dt>Reading</dt><dd>${esc(tFmt(s.time))}${s.time ? ` · ${esc(ago(s.time))}` : ""}</dd>
+          <dt>Tendency</dt><dd><span class="tend">${s.tendency ? `<svg viewBox="0 0 12 12" fill="var(--ink-2)">${tendencyPath(s.tendency)}</svg>${esc(s.tendency)}${tendNote}` : "Not reported"}</span></dd>
+          <dt>Class</dt><dd>${esc(CLASSES[key].label)}${s.classSource ? ` · ${esc(classNote)}` : ""}</dd>
+          ${crossings.length ? `<dt>Crossing</dt><dd>${crossings.join("<br>")}</dd>` : ""}
+          <dt>Datum</dt><dd>${s.datum === "AHD" ? "AHD, roughly metres above mean sea level" : s.datum === "LGH" ? "Local gauge height (zero near the dry-weather low)" : "Not stated"}</dd>
+        </dl>
+      </div>
+    </div>
+    <div>
+      <h3 class="section-title">Flood levels</h3>
+      ${hasLv ? `<table class="levels"><thead><tr><th>Class</th><th class="num">Level (m)</th><th class="num">Now vs level</th></tr></thead><tbody>${rows}</tbody></table>
+        <p class="g-sub" style="margin:6px 0 0">Source: ${esc(s.levelsSource || "BoM")}</p>`
+        : `<p class="g-sub" style="margin:0">${S.latest.demo ? "This sample snapshot has flood levels for Kedron Brook at Mitchelton only. The live site reads them for every gauge from BoM's flood-warning map." : "BoM's feed has not supplied flood classification levels for this gauge. Many smaller gauges have none."}</p>`}
+    </div>
+    <div>
+      <div class="chart-head"><h3 class="section-title" style="margin:0">Water level</h3>
+        <div class="seg" role="group" aria-label="Time range">
+          ${[[24, "24 h"], [72, "3 days"], [168, "7 days"]].map(([h, l]) => `<button type="button" data-h="${h}" aria-pressed="${S.range === h}">${l}</button>`).join("")}
+        </div></div>
+      <div class="hydro" id="hydro"><div class="hydro-empty">Loading readings…</div></div>
+      <details class="readings"><summary>Show readings as a table</summary><div class="readings-table" id="readings"></div></details>
+    </div>
+    <div class="links">
+      <a href="${esc(s.links?.plot)}" target="_blank" rel="noopener">BoM plot</a>
+      <a href="${esc(s.links?.table)}" target="_blank" rel="noopener">BoM 7-day table</a>
+      ${s.lat != null ? `<a href="https://www.openstreetmap.org/?mlat=${s.lat}&mlon=${s.lon}#map=15/${s.lat}/${s.lon}" target="_blank" rel="noopener">Open location in OpenStreetMap</a>` : ""}
+    </div>
+    <p class="g-sub" style="margin:0">${s.lat != null ? `Location: ${esc(s.coordSource || "BoM")}.` : "This gauge has no published location, so it is not on the map."}</p>`;
+
+  $("#back").addEventListener("click", () => showView("rivers"));
+  view.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+    S.range = +b.dataset.h;
+    view.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    drawHydro();
+  }));
+  loadHistory().then(() => { if (S.selected === s.id && S.view === "gauge") drawHydro(); });
+}
+
+function seriesFor(s) {
+  const pts = (S.history?.series?.[s.id] || []).slice();
+  if (!pts.length && s.spark?.length) return s.spark.slice();
+  return pts;
+}
+
+function niceStep(span, target) {
+  const raw = span / target;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / p;
+  return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p;
+}
+
+function drawHydro() {
+  const s = S.byId.get(S.selected);
+  const el = $("#hydro");
+  if (!s || !el) return;
+  const all = seriesFor(s);
+  const table = $("#readings");
+  if (table) {
+    const rowsHtml = all.slice(-150).reverse().map(([t, v]) => `<tr><td>${esc(fmtRow.format(minToDate(t)))}</td><td class="num">${v.toFixed(2)}</td></tr>`).join("");
+    table.innerHTML = all.length ? `<table><thead><tr><th>Time (AEST)</th><th class="num">Height (m ${esc(s.datum || "")})</th></tr></thead><tbody>${rowsHtml}</tbody></table>` : '<p class="g-sub" style="padding:8px 10px;margin:0">No readings yet.</p>';
+  }
+  const endT = all.length ? all[all.length - 1][0] : Math.floor(nowMs() / 60000);
+  const startT = endT - S.range * 60;
+  const pts = all.filter((p) => p[0] >= startT);
+  if (pts.length < 2) {
+    el.innerHTML = `<div class="hydro-empty">${pts.length ? "Only one reading so far in this range." : "No readings in this range yet."} ${S.latest.demo
+      ? "The sample snapshot only includes a 7-day history for Kedron Brook at Mitchelton. On the live site, every gauge builds up 7 days of 15-minute readings."
+      : "History builds up automatically every 15 minutes, up to 7 days."}</div>`;
+    return;
+  }
+  const vals = pts.map((p) => p[1]);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const lv = s.levels || {};
+  const span0 = Math.max(hi - lo, 0.2);
+  const thr = [["minor", lv.minor], ["moderate", lv.moderate], ["major", lv.major]].filter(([, v]) => v != null);
+  // Always show the minor flood level; higher levels only when they're within reach of the data.
+  const inView = [];
+  const offView = [];
+  thr.forEach(([k, v], i) => {
+    if (i === 0 || v <= hi + span0 * 1.5 || v <= Math.max(hi, lv.minor ?? hi) + 0.5) inView.push([k, v]); else offView.push([k, v]);
+  });
+  inView.forEach(([, v]) => { lo = Math.min(lo, v); hi = Math.max(hi, v); });
+  // Levels above the plotted range are listed in the top margin instead of squashing the trace.
+  const W = Math.max(280, el.clientWidth || 380);
+  const m = { l: 42, r: 98, t: 12 + offView.length * 14, b: 24 };
+  const H = 220 + offView.length * 14;
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const pad = Math.max((hi - lo) * 0.08, 0.05);
+  lo -= pad; hi += pad;
+  const ys = (v) => m.t + ih - ((v - lo) / (hi - lo)) * ih;
+  const xs = (t) => m.l + ((t - startT) / (endT - startT)) * iw;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Water level at ${esc(s.name)}, last ${S.range} hours">`;
+  const step = niceStep(hi - lo, 4);
+  svg += '<g class="grid axis">';
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
+    svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${ys(v)}" y2="${ys(v)}"/><text x="${m.l - 6}" y="${ys(v) + 3.5}" text-anchor="end">${v.toFixed(step < 0.1 ? 2 : step < 1 ? 1 : 0)}</text>`;
+  }
+  // x ticks: local midnights (or every 6 hours on the 24 h view)
+  const tickEvery = S.range <= 24 ? 360 : 1440;
+  const offset = 600; // AEST, minutes
+  for (let t = Math.ceil((startT + offset) / tickEvery) * tickEvery - offset; t <= endT; t += tickEvery) {
+    const x = xs(t);
+    const label = S.range <= 24 ? fmtHour.format(minToDate(t)).replace(/\s/g, "") : fmtDay.format(minToDate(t));
+    svg += `<line x1="${x}" x2="${x}" y1="${m.t}" y2="${m.t + ih}"/><text x="${x}" y="${H - 6}" text-anchor="middle">${esc(label)}</text>`;
+  }
+  svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}" style="stroke:var(--rule-strong)"/></g>`;
+
+  // threshold reference lines
+  svg += '<g class="thr">';
+  inView.forEach(([k, v]) => {
+    svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${ys(v)}" y2="${ys(v)}" style="stroke:var(--st-${k})"/>
+      <text x="${m.l + iw + 6}" y="${ys(v) + 3.5}" style="fill:var(--ink-2)">${CLASSES[k].short} ${v.toFixed(2)}</text>`;
+  });
+  offView.forEach(([k, v], i) => {
+    svg += `<text x="${m.l + iw + 6}" y="${10 + i * 14}" style="fill:var(--ink-3)">${CLASSES[k].short} ${v.toFixed(2)} ↑</text>`;
+  });
+  svg += "</g>";
+
+  // series, broken where readings are more than 6 hours apart
+  const segs = [];
+  let cur = [];
+  pts.forEach((p, i) => {
+    if (i && p[0] - pts[i - 1][0] > 360) { segs.push(cur); cur = []; }
+    cur.push(p);
+  });
+  segs.push(cur);
+  segs.forEach((seg) => {
+    if (seg.length < 2) return;
+    const d = seg.map((p, i) => `${i ? "L" : "M"}${xs(p[0]).toFixed(1)} ${ys(p[1]).toFixed(1)}`).join("");
+    svg += `<path class="area" d="${d}L${xs(seg[seg.length - 1][0]).toFixed(1)} ${m.t + ih}L${xs(seg[0][0]).toFixed(1)} ${m.t + ih}Z"/>`;
+    svg += `<path class="series" d="${d}"/>`;
+  });
+  const last = pts[pts.length - 1];
+  svg += `<circle class="end-dot" cx="${xs(last[0])}" cy="${ys(last[1])}" r="4.5"/>`;
+  const labelY = Math.min(Math.max(ys(last[1]) - 9, m.t + 8), m.t + ih - 4);
+  svg += `<text class="end-label" x="${xs(last[0]) - 6}" y="${labelY}" text-anchor="end">${last[1].toFixed(2)}</text>`;
+  svg += `<g class="cross" visibility="hidden"><line y1="${m.t}" y2="${m.t + ih}"/><circle class="hover-dot" r="4.5"/></g>`;
+  svg += `<rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" class="hit"/></svg>`;
+  el.innerHTML = svg + '<div class="hydro-tip" hidden></div>';
+
+  const svgEl = el.querySelector("svg");
+  const cross = svgEl.querySelector(".cross");
+  const tip = el.querySelector(".hydro-tip");
+  const hit = svgEl.querySelector(".hit");
+  const move = (ev) => {
+    const r = svgEl.getBoundingClientRect();
+    const x = ((ev.clientX - r.left) / r.width) * W;
+    const t = startT + ((x - m.l) / iw) * (endT - startT);
+    let best = pts[0];
+    for (const p of pts) if (Math.abs(p[0] - t) < Math.abs(best[0] - t)) best = p;
+    const cx = xs(best[0]), cy = ys(best[1]);
+    cross.setAttribute("visibility", "visible");
+    cross.querySelector("line").setAttribute("x1", cx); cross.querySelector("line").setAttribute("x2", cx);
+    cross.querySelector("circle").setAttribute("cx", cx); cross.querySelector("circle").setAttribute("cy", cy);
+    tip.hidden = false;
+    tip.innerHTML = `<span class="num">${best[1].toFixed(2)} m</span> · ${esc(fmtRow.format(minToDate(best[0])))}`;
+    const px = (cx / W) * r.width, py = (cy / H) * r.height - 10;
+    tip.style.left = `${Math.min(Math.max(px, 70), r.width - 70)}px`;
+    tip.style.top = `${Math.max(py, 24)}px`;
+  };
+  hit.addEventListener("pointermove", move);
+  hit.addEventListener("pointerdown", move);
+  hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); tip.hidden = true; });
+}
+
+// ------------------------------------------------------------------ about
+function renderAbout() {
+  const L = S.latest;
+  const src = L.sources || {};
+  const st = (o) => (o == null ? "" : o.ok || o.available ? '<span class="src-ok">OK</span>' : '<span class="src-bad">unavailable</span>');
+  const srcRows = L.demo ? "" : `<p>Last update: bulletin ${st(src.bulletin)}${src.bulletin?.issued ? ` (issued ${esc(tFmt(src.bulletin.issued))})` : ""} · flood map ${st(src.mapPages)} · 15-minute readings ${st(src.observations)}.</p>`;
+  $("#about").innerHTML = `
+    <h2>About this data</h2>
+    <p><b>Not an official warning.</b> For flood warnings, see <a href="https://www.bom.gov.au/qld/warnings/" target="_blank" rel="noopener">BoM Queensland warnings</a>. For SES help call 132 500. In a life-threatening emergency call 000.</p>
+    <p>Heights come from the Bureau of Meteorology's river height bulletin ${esc(L.bulletin?.product || "IDQ60286")} and its public data feed, refreshed about every 15 minutes. Most gauges are run by other agencies and report to BoM in real time; readings are not quality-checked and can be missing or wrong.</p>
+    ${srcRows}
+    <dl>
+      <dt><span class="swatch sw-minor"></span>Minor</dt><dd>Low-lying land next to the waterway goes under; minor roads and low bridges may close.</dd>
+      <dt><span class="swatch sw-moderate"></span>Moderate</dt><dd>As for minor, plus some buildings may flood above floor level and main roads may be cut. Evacuations may be needed.</dd>
+      <dt><span class="swatch sw-major"></span>Major</dt><dd>Widespread flooding of towns or farmland. Properties and communities can be isolated and major roads close.</dd>
+    </dl>
+    <p>Heights are in metres on each gauge's own datum, so compare a gauge with its own flood levels, not with other gauges. Data © Bureau of Meteorology, CC BY 4.0 AU.</p>`;
+}
+
+// ------------------------------------------------------------------ navigation
+function showView(v) {
+  S.view = v;
+  $("#tab-rivers").setAttribute("aria-selected", v === "rivers");
+  $("#tab-gauge").setAttribute("aria-selected", v === "gauge");
+  $("#filters").hidden = v !== "rivers";
+  if (v === "rivers") renderRivers(); else renderGauge();
+  if (v === "gauge") {
+    const panel = $(".panel");
+    if (getComputedStyle(panel).overflowY === "auto") panel.scrollTop = 0;
+  }
+  if (v === "rivers" && S.selected) {
+    requestAnimationFrame(() => {
+      const li = document.querySelector(`.stop[data-id="${CSS.escape(S.selected)}"]`);
+      if (li) li.scrollIntoView({ block: "nearest", inline: "center" });
+    });
+  }
+}
+
+function select(id, { fromMap = false, keepView = false } = {}) {
+  const prev = S.selected;
+  S.selected = id;
+  const s = S.byId.get(id);
+  [prev, id].forEach((x) => {
+    const st = S.byId.get(x);
+    const mk = S.markers.get(x);
+    if (st && mk) {
+      const { html, size } = markerSvg(st, x === id);
+      mk.setIcon(L.divIcon({ html, className: markerClass(st, x === id), iconSize: [size, size], iconAnchor: [size / 2, size / 2] }));
+      mk.setZIndexOffset(CLASSES[clsKey(st)].rank * 1000 + (x === id ? 10000 : 0));
+    }
+  });
+  renderLabels();
+  applyFilters();
+  $("#tab-gauge").disabled = false;
+  try { history.replaceState(null, "", `#g${id}`); } catch (e) { /* not available in every viewer */ }
+  if (!keepView) showView("gauge");
+  if (s && s.lat != null && !fromMap) {
+    const ll = L.latLng(s.lat, s.lon);
+    if (!S.map.getBounds().pad(-0.1).contains(ll) || S.map.getZoom() < 10.5) S.map.setView(ll, Math.max(S.map.getZoom(), 11));
+  }
+  if (window.matchMedia("(max-width: 860px)").matches && fromMap) $(".panel").scrollIntoView({ block: "start" });
+}
+
+// ------------------------------------------------------------------ boot
+function index() {
+  S.byId = new Map(S.latest.stations.map((s) => [s.id, s]));
+  const sel = $("#area");
+  const current = S.area;
+  sel.innerHTML = `<option value="all">All areas</option>` + S.latest.groups.map((g) => `<option value="${esc(g.name)}">${esc(g.name)}</option>`).join("");
+  sel.value = S.latest.groups.some((g) => g.name === current) ? current : "all";
+  S.area = sel.value;
+}
+
+function renderAll() {
+  index();
+  renderHeader();
+  renderMap();
+  renderAbout();
+  applyFilters();
+  if (S.view === "gauge" && S.selected) renderGauge();
+}
+
+async function refresh() {
+  try {
+    S.latest = await loadLatest();
+    S.historyLoading = null;
+    renderAll();
+  } catch (e) { /* keep showing the last good data; the timestamp shows its age */ }
+}
+
+async function boot() {
+  S.embedded = readEmbedded();
+  try {
+    S.geo = S.embedded?.geo || await fetch("geo/seq-base.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  } catch (e) { S.geo = null; }
+  initMap();
+  renderLegend();
+  if (matchMedia("(max-width: 860px)").matches) $("#legend-box").open = false;
+  try {
+    S.latest = await loadLatest();
+  } catch (e) {
+    $("#view").innerHTML = `<div class="hydro-empty"><b>River heights haven't been collected yet.</b> The first update runs a few minutes after the site is set up. If this persists, check the "Update river heights" workflow on GitHub. (${esc(e.message)})</div>`;
+    return;
+  }
+  renderAll();
+  fitVisible();
+  $("#q").addEventListener("input", (e) => { S.q = lower(e.target.value.trim()); applyFilters(); });
+  $("#area").addEventListener("change", (e) => { S.area = e.target.value; applyFilters(); fitVisible(); });
+  $("#tab-rivers").addEventListener("click", () => showView("rivers"));
+  $("#tab-gauge").addEventListener("click", () => S.selected && showView("gauge"));
+  const hash = location.hash.match(/^#g(\w+)$/);
+  if (hash && S.byId.has(hash[1])) select(hash[1]);
+  else showView("rivers");
+  let resizeT;
+  new ResizeObserver(() => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (S.view === "gauge") drawHydro(); }, 120); }).observe($(".panel"));
+  if (!S.embedded) setInterval(refresh, REFRESH_MS);
+}
+
+boot();
+})();
+</script>
+</body>
+</html>

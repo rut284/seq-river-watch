@@ -1,0 +1,114 @@
+# SEQ River Watch
+
+A self-updating website that maps river heights and flood classes for every gauge in the Bureau of Meteorology's **Brisbane, Pine and Caboolture rivers and tributaries** bulletin ([IDQ60286](https://www.bom.gov.au/cgi-bin/wrap_fwo.pl?IDQ60286.html)), about 230 gauges across four areas: Ipswich/Brisbane Creeks, Pine/Caboolture, Stanley/Upper Brisbane and Lower Brisbane.
+
+- **Map**: every gauge as a dot coloured by BoM flood class (below / minor / moderate / major), with an arrow inside when the river is rising or falling. Gauges at or above minor flood level carry a label with their height. Choose the background:
+  - **Streets** (default): a clean grey street map from [OpenFreeMap](https://openfreemap.org), built from OpenStreetMap, with suburbs, roads and waterways.
+  - **Topo**: the Queensland Government's topographic map.
+  - **Aerial**: the Queensland Government's latest aerial imagery.
+  - **Outline**: a simple built-in coastline with each waterway's gauges joined upstream to downstream. Used automatically if the others can't load.
+
+  None of these need an account or key. Each option only appears if it loads for the visitor.
+- **Rivers**: each waterway drawn as a line of gauges from upstream to downstream, with the latest height and how far it is from the next flood level.
+- **Gauge**: a flood gauge board, latest reading, BoM's minor/moderate/major levels, crossing heights, and a 24-hour / 3-day / 7-day hydrograph with a readings table.
+- Updates itself about every 15 minutes, for free, on GitHub. No server, database or API key.
+
+> **Not an official warning service.** Always follow [BoM Queensland warnings](https://www.bom.gov.au/qld/warnings/) and emergency services. SES: 132 500. Emergency: 000.
+
+---
+
+## Set it up (about 15 minutes, no coding)
+
+You need a free GitHub account. Everything below happens in your web browser.
+
+1. **Create the repository.** Sign in at [github.com](https://github.com), click **+ → New repository**, name it `seq-river-watch`, choose **Public** (free GitHub Pages sites must be public), and click **Create repository**.
+
+2. **Upload the files.** On the new repository page click **uploading an existing file**, then drag in everything from this folder *except* the `.github` folder, and click **Commit changes**.
+   The `.github` folder is hidden on most computers, so add its workflow by hand:
+   click **Add file → Create new file**, type the name `.github/workflows/update.yml`, paste in the contents of that file from this folder, and click **Commit changes**. Repeat for `.github/workflows/keepalive.yml` (and `tests.yml` if you want the automatic tests).
+
+3. **Turn on the website.** Go to **Settings → Pages**. Under *Build and deployment → Source*, choose **GitHub Actions**.
+
+4. **Run the first update.** Go to the **Actions** tab. If asked, click **I understand my workflows, go ahead and enable them**. Choose **Update river heights → Run workflow → Run workflow**. It takes about a minute.
+
+5. **Open your site** at `https://<your-github-username>.github.io/seq-river-watch/`. The address is also shown on the finished workflow run and under **Settings → Pages**.
+
+From then on it refreshes itself about every 15 minutes, and the page reloads its data every 5 minutes while open. The 7-day hydrographs fill in as readings accumulate.
+
+### If something goes wrong
+
+| What you see | What it means / what to do |
+|---|---|
+| A workflow run failed at *Collect river heights from BoM* | BoM's feed couldn't be reached or returned nothing new. The site keeps its last good data and the next run tries again. Open the run's log to see which file failed. |
+| A run failed at *configure-pages* | GitHub Pages isn't turned on yet: do step 3. |
+| Yellow "may be out of date" banner on the site | No successful update in the last hour. Check the Actions tab. |
+| Updates stopped after a couple of months | GitHub pauses schedules in repositories with no commits for 60 days. `keepalive.yml` prevents this; if it happened anyway, open **Actions → Update river heights** and click **Enable workflow**. |
+| Gauge shows no flood levels | BoM hasn't published levels for that gauge (common for small creeks and storages). |
+
+---
+
+## Where the data comes from
+
+All data comes from BoM's **public data feed** for automated use, `ftp://ftp.bom.gov.au/anon/gen/fwo/`, not by scraping the BoM website. Each run makes one connection and downloads a handful of files:
+
+| File | Gives |
+|---|---|
+| `IDQ60286.html` | the bulletin: areas, station order, gauge type, datum, BoM's flood class, tendency, crossing heights |
+| `IDQ65389.html` | BoM's flood-warning map page: each gauge's coordinates, latest level, and minor/moderate/major flood levels |
+| `IDQ65911_<time>.hcs` | 15-minute water levels for the last ~3 hours, every Queensland gauge |
+| `IDQ65910_<time>.hcs` | latest water level per gauge |
+| `IDQ65389/IDQ65389.<station>.tbl.shtml` | 7-day tables, used a few per run to fill early history, *only if the feed offers them* |
+
+Other `IDQ65xxx.html` map pages are scanned at most once a day, and only to find coordinates for gauges missing from `IDQ65389.html`.
+
+The collector keeps going if any single file is missing. Without the bulletin it uses the station list in `collector/stations.json` (built from the 22 October 2026 bulletin) and takes classes from the map page or works them out from BoM's flood levels. Each gauge in the page says where its class, tendency and flood levels came from.
+
+**History without a database.** Each run downloads the previous `data/history.json` from your own published site, adds the new readings, trims to 7 days and republishes it.
+
+**Careful handling.** Missing values stay missing (never zero). Heights keep their own datum (local gauge height or AHD); readings on a different datum from the bulletin are dropped rather than mixed. Flood levels are never borrowed from a neighbouring gauge. Bulletin times like "10.14AM Thu" are dated from the issue time.
+
+### Credits and licences
+
+- River heights: © Commonwealth of Australia, Bureau of Meteorology, [CC BY 4.0 AU](https://creativecommons.org/licenses/by/4.0/au/). Most gauge data is supplied to BoM by other agencies, in real time and without quality control, and is subject to those agencies' terms.
+- Fallback gauge coordinates: BoM Queensland flood warning river height station catalogue (5 January 2022).
+- Coastline, Brisbane River and Lake Wivenhoe outlines: [Natural Earth](https://www.naturalearthdata.com/) (public domain).
+- Map library: [Leaflet](https://leafletjs.com/) 1.9.4 (BSD-2-Clause); street map drawn with [MapLibre GL JS](https://maplibre.org/) 5.24 through [maplibre-gl-leaflet](https://github.com/maplibre/maplibre-gl-leaflet).
+- Street map: [OpenFreeMap](https://openfreemap.org) © [OpenMapTiles](https://www.openmaptiles.org/), data from [OpenStreetMap](https://www.openstreetmap.org/copyright). Free with no key or usage limit, but no uptime guarantee; the project runs on donations.
+- Topographic map and aerial imagery: © State of Queensland, from the public `QldMap_Topo` and `LatestStateProgram_AllUsers` basemap services on QSpatial. Their catalogue entries don't state a licence, so keep the © State of Queensland credit visible (the map does this automatically).
+
+### Other map providers
+
+If you'd rather use a different look, these need a free account and an API key added to `BASEMAPS` in `site/index.html`:
+
+| Provider | Free tier (check current terms) | Good for |
+|---|---|---|
+| [MapTiler](https://www.maptiler.com/) | free key for small sites | polished streets, topo and satellite styles |
+| [Stadia Maps](https://stadiamaps.com/) | free for non-commercial use, register your domain | the very clean "Alidade Smooth" style |
+| [CARTO](https://carto.com/basemaps) | free key, up to 5 million tile requests a month for non-commercial use | the classic "Positron" light map used by many news sites |
+| [Esri / ArcGIS Location Platform](https://developers.arcgis.com/) | free developer account and key | Esri topographic and world imagery, common on government sites |
+
+---
+
+## For developers
+
+```
+collector/collect.py      the scheduled job (Python 3.10+, standard library only)
+collector/bom_parse.py    parsers for the bulletin, station tables, map pages and BOM-HCS files
+collector/stations.json   bundled station list and fallback coordinates
+site/index.html           the whole website: one file, Leaflet from cdnjs, MapLibre loaded only for the street map
+site/geo/seq-base.json    coastline / river / lake outlines for the map
+site/data/                written by the collector (not committed)
+tests/                    unit tests, including a real FTP round-trip against a local server
+tools/                    catalogue builder and the sample-data preview builder
+```
+
+Run it locally:
+
+```bash
+python collector/collect.py --out site/data          # needs internet access to ftp.bom.gov.au
+python -m http.server -d site 8000                   # then open http://localhost:8000
+python -m unittest discover -s tests                 # pip install pyftpdlib for the FTP test
+python tools/make_preview.py preview.html            # single file with the labelled sample snapshot
+```
+
+To cover a different BoM bulletin, save that bulletin's HTML, rebuild the station list with `tools/build_catalogue.py`, and change `BULLETIN` and `DEFAULT_MAP_PAGES` at the top of `collector/collect.py`.

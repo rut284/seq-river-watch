@@ -1,0 +1,25 @@
+# GitHub pauses scheduled workflows in public repositories after 60 days without
+# any commits. This makes one tiny commit a month so the 15-minute updates keep running.
+name: Keep schedule alive
+
+on:
+  schedule:
+    - cron: "17 3 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record a heartbeat commit
+        run: |
+          date -u +%Y-%m-%dT%H:%M:%SZ > .github/last-keepalive
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/last-keepalive
+          git commit -m "Keep scheduled river-height updates running" || exit 0
+          git push
