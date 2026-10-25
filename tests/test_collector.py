@@ -284,6 +284,72 @@ class CollectorRunTests(unittest.TestCase):
         self.assertEqual(st["540713"]["group"], "Logan-Albert")  # still listed, from the catalogue
         self.assertIn("Nerang", [g["name"] for g in latest["groups"]])
 
+    def test_per_gauge_history_files(self):
+        self.assertEqual(self.run_collector(), 0)
+        one = json.loads((self.out / "history" / "540478.json").read_text())
+        self.assertEqual(one["id"], "540478")
+        self.assertEqual(one["points"], self.load("history.json")["series"]["540478"])
+        self.assertEqual(len(list((self.out / "history").glob("*.json"))), ALL_GAUGES)
+
+    def test_unreadable_history_stops_the_run(self):
+        prev = self.tmp / "prev"
+        prev.mkdir()
+        (prev / "history.json").write_text("{not json")
+        self.assertEqual(self.run_collector("--previous", str(prev)), 3)
+        self.assertFalse((self.out / "latest.json").exists())  # nothing published, old site kept
+
+    def test_backfill_after_a_gap(self):
+        self.assertEqual(self.run_collector(), 0)
+        prev = self.tmp / "prev"
+        shutil.copytree(self.out, prev)
+        for f in self.feed.glob("*.hcs"):
+            f.unlink()
+        # Three hours later: two newer files are still listed; the older one holds a reading the newest lacks.
+        (self.feed / "IDQ65911_20261022024500.hcs").write_text(hcs([
+            ("WL", "540478", "2026-10-22T02:30:00Z", 10.9, "metres", "AHD")]), encoding="utf-8")
+        (self.feed / "IDQ65911_20261022034500.hcs").write_text(hcs([
+            ("WL", "540478", "2026-10-22T03:30:00Z", 11.1, "metres", "AHD")]), encoding="utf-8")
+        self.now = "2026-10-22T03:50:00+00:00"
+        self.assertEqual(self.run_collector("--previous", str(prev)), 0)
+        values = [v for _, v in self.load("history.json")["series"]["540478"]]
+        self.assertIn(10.9, values)
+        self.assertIn(11.1, values)
+        latest = self.load("latest.json")
+        self.assertEqual(latest["sources"]["observations"]["backfilled"], 1)
+        self.assertEqual(self.load("meta.json")["lastHcsFile"], "IDQ65911_20261022034500.hcs")
+
+    def test_crossing_levels(self):
+        (self.feed / "IDQ60285.html").write_text((FIX / "IDQ60285_2026-10-26.html").read_text(encoding="utf-8"), encoding="utf-8")
+        (self.feed / "IDQ60286.html").write_text((FIX / "IDQ60286_2026-10-26.html").read_text(encoding="utf-8"), encoding="utf-8")
+        self.now = "2026-10-25T21:50:00+00:00"
+        self.assertEqual(self.run_collector(), 0)
+        st = {s["id"]: s for s in self.load("latest.json")["stations"]}
+        harpers = st["540713"]["crossings"]  # "1.97 above Bridge" at 5.20 m
+        self.assertEqual([(c["name"], c["level"], c["kind"]) for c in harpers], [("Bridge", 3.23, "road")])
+        self.assertEqual(st["540568"]["crossings"][0]["level"], 1.0)        # Junction View: 2.35 above Crossing at 3.35
+        self.assertEqual(st["540291"]["crossings"][0]["level"], -0.03)      # Clagiraba Rd: 0.99 above Causeway at 0.96
+        self.assertEqual(st["540604"]["crossings"][0]["kind"], "storage")   # Enoggera Dam spillway
+        self.assertEqual(st["540762"]["crossings"][0]["kind"], "tide")      # Shorncliffe HAT
+        road = sum(1 for s in st.values() for c in s["crossings"] if c["kind"] == "road")
+        self.assertGreaterEqual(road, 50)
+        # Next run: the bulletin no longer gives Harpers Crossing a height; the level is remembered.
+        prev = self.tmp / "prev"
+        shutil.copytree(self.out, prev)
+        text = (self.feed / "IDQ60285.html").read_text(encoding="utf-8")
+        self.assertIn("1.97 above Bridge", text)
+        (self.feed / "IDQ60285.html").write_text(text.replace("1.97 above Bridge", "&nbsp;"), encoding="utf-8")
+        self.assertEqual(self.run_collector("--previous", str(prev)), 0)
+        st = {s["id"]: s for s in self.load("latest.json")["stations"]}
+        self.assertEqual(st["540713"]["crossings"][0]["level"], 3.23)
+
+    def test_crossing_kinds(self):
+        kinds = {f: collect.crossing_kind(f) for f in
+                 ("Bridge", "Road", "Causeway", "Crossing", "Approaches", "Spillway", "Full Supply", "Weir", "HAT", "Gauge board")}
+        self.assertEqual(kinds, {"Bridge": "road", "Road": "road", "Causeway": "road", "Crossing": "road",
+                                 "Approaches": "road", "Spillway": "storage", "Full Supply": "storage",
+                                 "Weir": "storage", "HAT": "tide", "Gauge board": "other"})
+        self.assertIsNone(collect.derive_crossing({"height": None, "crossing": {"distance": 1.0, "relation": "below", "feature": "Bridge"}}))
+
     def test_over_real_ftp(self):
         try:
             from pyftpdlib.authorizers import DummyAuthorizer

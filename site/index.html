@@ -391,6 +391,49 @@ ol.ds-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .ds-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 
+
+/* crossings */
+.cx-icon { width: 15px; height: 15px; flex: none; display: inline-block; vertical-align: -3px; }
+.cx-chip .cx-icon { width: 14px; height: 14px; }
+.cx-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.cx-tag.over { background: var(--ink); color: var(--panel); }
+.cx-tag.near { border: 1px solid var(--ink-2); color: var(--ink); }
+.cx-facts { display: grid; gap: 3px; }
+.cx-fact { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.levels tr.cx td:first-child { color: var(--ink); }
+.levels .lab .cx-icon { color: var(--ink-2); }
+.hydro .ref-cx { stroke-dasharray: 5 3; stroke-width: 1.5; }
+.hydro .leader { stroke: var(--ink-3); stroke-width: 1; fill: none; }
+.stop-cx { display: inline-flex; align-items: center; gap: 3px; font: 600 11px/1.2 var(--font-data); padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
+.stop-cx .cx-icon { width: 12px; height: 12px; }
+.stop-cx.over { background: var(--ink); color: var(--panel); }
+.stop-cx.near { border: 1px solid var(--ink-2); color: var(--ink); }
+.cx-intro { display: grid; gap: 6px; }
+.cx-summary { margin: 0; font-size: 15px; }
+.cx-summary b { font: 600 20px/1 var(--font-body); font-variant-numeric: tabular-nums; }
+.cx-sec h2 { margin: 0 0 6px; font: 700 18px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; display: flex; gap: 8px; align-items: baseline; }
+.cx-sec h2 span { font: 500 13px var(--font-data); color: var(--ink-3); }
+.cx-sec .g-sub { margin: 0 0 6px; }
+ol.cx-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.cx-row {
+  width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  border: 0; border-left: 3px solid transparent; background: none; padding: 7px 8px; border-radius: 6px; cursor: pointer; text-align: left; font-size: 13.5px;
+}
+.cx-row:hover { background: var(--accent-wash); }
+.cx-row.over { border-left-color: var(--ink); background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.cx-row.near { border-left-color: var(--ink-3); }
+.cx-ic { color: var(--ink-2); display: grid; }
+.cx-ic .cx-icon { width: 18px; height: 18px; }
+.cx-main { min-width: 0; }
+.cx-sub { display: block; color: var(--ink-3); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-val { display: inline-flex; align-items: center; gap: 4px; font: 600 14px var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cx-row.clear .cx-val, .cx-row.unknown .cx-val { font-weight: 400; color: var(--ink-2); }
+.cx-arrow { width: 10px; height: 10px; color: var(--ink-2); }
+details.cx-more summary { cursor: pointer; color: var(--accent); font-size: 13.5px; padding: 4px 0; }
+details.cx-more[open] summary { margin-bottom: 4px; }
+.rw-label-in .cx-icon { width: 13px; height: 13px; align-self: center; }
+.rw-label-in.cx-over { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+
 @media (max-width: 860px) {
   body { display: block; height: auto; }
   .app { display: flex; flex-direction: column; }
@@ -429,6 +472,7 @@ ol.ds-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     <div class="panel-head">
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" id="tab-rivers" aria-selected="true" aria-controls="view">Rivers</button>
+        <button class="tab" role="tab" id="tab-crossings" aria-selected="false" aria-controls="view">Crossings</button>
         <button class="tab" role="tab" id="tab-gauge" aria-selected="false" aria-controls="view" disabled>Gauge</button>
       </div>
       <div class="filters" id="filters">
@@ -554,14 +598,26 @@ async function loadLatest() {
   if (!res.ok) throw new Error(`data/latest.json returned ${res.status}`);
   return res.json();
 }
-function loadHistory(force) {
+// Each gauge's 7-day history is its own small file (data/history/<id>.json), loaded when the
+// gauge is opened. Older deployments only had the combined data/history.json.
+function loadHistory(id) {
   if (S.embedded) { S.history = S.embedded.history || { series: {} }; return Promise.resolve(S.history); }
-  if (S.historyLoading && !force) return S.historyLoading;
-  S.historyLoading = fetch(`data/history.json?t=${Date.now()}`, { cache: "no-store" })
-    .then((r) => (r.ok ? r.json() : { series: {} }))
-    .catch(() => ({ series: {} }))
-    .then((h) => (S.history = h));
-  return S.historyLoading;
+  S.history = S.history || { series: {} };
+  S.histLoaded = S.histLoaded || {};
+  const stamp = S.latest?.generated;
+  if (!id || S.histLoaded[id] === stamp) return Promise.resolve(S.history);
+  return fetch(`data/history/${encodeURIComponent(id)}.json?t=${encodeURIComponent(stamp || Date.now())}`)
+    .then((r) => {
+      if (r.ok) return r.json().then((h) => { S.history.series[id] = h.points || []; });
+      if (r.status === 404 && !S.histCombined) {
+        S.histCombined = true;
+        return fetch(`data/history.json?t=${Date.now()}`).then((x) => (x.ok ? x.json() : { series: {} }))
+          .then((h) => { Object.assign(S.history.series, h.series || {}); });
+      }
+      return null;
+    })
+    .catch(() => null)
+    .then(() => { S.histLoaded[id] = stamp; return S.history; });
 }
 
 // ------------------------------------------------------------------ filtering
@@ -592,7 +648,10 @@ function renderHeader() {
     `<span class="chip" style="cursor:default" title="${CLASSES[k].label}"><span class="swatch sw-${k}"></span>${CLASSES[k].short} <b>${counts[k]}</b></span>`);
   chips.unshift(`<button class="chip" id="flood-only" type="button" aria-pressed="${S.floodOnly}" ${flooding ? "" : "disabled"}
     title="Show only gauges at or above minor flood level">At or above minor <b>${flooding}</b></button>`);
+  const under = roadsUnderWater().length;
+  chips.splice(1, 0, `<button class="chip cx-chip" id="cx-chip" type="button" title="Show bridges, roads and causeways under water">${crossIcon("road")}Crossings under water <b>${under}</b></button>`);
   $("#summary").innerHTML = chips.join("");
+  $("#cx-chip").addEventListener("click", () => showView("crossings"));
   const btn = $("#flood-only");
   btn.addEventListener("click", () => { S.floodOnly = !S.floodOnly; btn.setAttribute("aria-pressed", S.floodOnly); applyFilters(); });
 
@@ -780,7 +839,31 @@ function renderBasemapSwitch() {
     : "Street and aerial maps couldn't load, so a simple outline is shown.";
 }
 
+function crossingLabels() {
+  const out = [];
+  S.latest.stations.forEach((s) => {
+    if (s.lat == null || !matchesPlace(s)) return;
+    const hits = (s.crossings || []).filter((c) => c.kind === "road").map((c) => ({ c, cs: crossingState(s, c) }))
+      .filter((x) => x.cs.state === "over" || x.cs.state === "near").sort((a, b) => b.cs.diff - a.cs.diff);
+    if (hits.length) out.push({ s, ...hits[0] });
+  });
+  return out;
+}
 function renderLabels() {
+  if (S.view === "crossings") {
+    S.labels.forEach((l) => S.map.removeLayer(l));
+    S.labels.clear();
+    crossingLabels().forEach(({ s, c, cs }) => {
+      const size = markerSize(s, s.id === S.selected);
+      const html = `<span class="rw-label-in cx-${cs.state}">${crossIcon(c.kind)}<b class="num">${fmtDiff(cs.diff)} m</b> ${esc(crossName(c))}, ${esc(s.place || s.name)}</span>`;
+      const icon = L.divIcon({ className: `rw-label cxl ${cs.state === "over" ? "r-major" : "r-minor"}`, html, iconSize: null, iconAnchor: [-(size / 2 + 5), 12] });
+      const lab = L.marker([s.lat, s.lon], { icon, pane: "labels", interactive: false, keyboard: false }).addTo(S.map);
+      lab._id = s.id; lab._rank = cs.state === "over" ? 5 + cs.diff : 1;
+      S.labels.set(s.id, lab);
+    });
+    declutterLabels();
+    return;
+  }
   // Gauges at or above minor flood level (and the selected gauge) keep a visible label.
   const map = S.map;
   S.labels.forEach((l) => map.removeLayer(l));
@@ -867,7 +950,10 @@ function applyFilters() {
   for (const [id, m] of S.markers) {
     const el = m.getElement();
     if (el) {
-      el.classList.toggle("dim", !matches(S.byId.get(id)));
+      const st = S.byId.get(id);
+      el.classList.toggle("dim", S.view === "crossings"
+        ? !(matchesPlace(st) && (st.crossings || []).some((c) => c.kind === "road"))
+        : !matches(st));
       el.classList.toggle("ds", !!S.downstream?.has(id));
     }
   }
@@ -877,6 +963,7 @@ function applyFilters() {
     if (el) el.classList.toggle("dim", !anyMatch);
   });
   if (S.view === "rivers") renderRivers();
+  else if (S.view === "crossings") renderCrossings();
 }
 
 function fitVisible() {
@@ -1033,6 +1120,93 @@ function waterPathHtml(s) {
   </div>`;
 }
 
+// ------------------------------------------------------------------ crossings
+// BoM's bulletins say how far the water is above or below a bridge, road, causeway, weir or
+// dam spillway at many gauges ("1.97 above Bridge"). The collector turns that into the
+// feature's level on the gauge, so it can be compared with every new reading.
+const NEAR_M = 0.5;
+const CROSS_ICON = {
+  road: '<path d="M1 10.5h14M2.5 10.5c0-3 2.4-5.5 5.5-5.5s5.5 2.5 5.5 5.5M5 7v3.5M11 7v3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  storage: '<path d="M2 3v10h6V7.5M10.5 9.5c1.2-.9 2.3-.9 3.5 0M9 12.5c1.6-1 3.4-1 5 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  tide: '<path d="M1 9c2-1.6 3.8-1.6 5.8 0S10.6 10.6 12.6 9 14.5 8 15 8M1 12.5c2-1.6 3.8-1.6 5.8 0s3.8 1.6 5.8 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  other: '<circle cx="8" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/>',
+};
+const crossIcon = (kind) => `<svg class="cx-icon" viewBox="0 0 16 16" aria-hidden="true">${CROSS_ICON[kind] || CROSS_ICON.other}</svg>`;
+const crossName = (c) => (/full supply/i.test(c.name) ? "Full supply level" : c.name.charAt(0).toUpperCase() + c.name.slice(1).toLowerCase());
+function crossingState(s, c) {
+  if (s.height == null) return { state: "unknown", diff: null };
+  const diff = Math.round((s.height - c.level) * 100) / 100;
+  if (diff >= 0) return { state: "over", diff };
+  return { state: -diff <= NEAR_M ? "near" : "clear", diff };
+}
+function crossingPhrase(c, cs) {
+  const what = /full supply/i.test(c.name) ? "full supply level" : `the ${c.name.toLowerCase()}`;
+  if (cs.diff == null) return "No current reading";
+  if (Math.abs(cs.diff) < 0.005) return `Water level with ${what}`;
+  if (cs.diff > 0) return c.kind === "road" ? `Water ${cs.diff.toFixed(2)} m over ${what}` : `${cs.diff.toFixed(2)} m above ${what}`;
+  return `${Math.abs(cs.diff).toFixed(2)} m below ${what}`;
+}
+const fmtDiff = (d) => (d == null ? "—" : `${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(2)}`);
+function crossingTag(c, cs) {
+  if (cs.state === "over") return `<span class="cx-tag over">${c.kind === "road" ? "Under water" : "Overflowing"}</span>`;
+  if (cs.state === "near" && c.kind === "road") return `<span class="cx-tag near">Within ${NEAR_M} m</span>`;
+  return "";
+}
+function allCrossings(filter = () => true) {
+  const out = [];
+  S.latest.stations.forEach((s) => (s.crossings || []).forEach((c) => {
+    if (filter(s, c)) out.push({ s, c, cs: crossingState(s, c) });
+  }));
+  return out;
+}
+function roadsUnderWater() {
+  return allCrossings((s, c) => c.kind === "road").filter((x) => x.cs.state === "over");
+}
+function matchesPlace(s) {
+  if (S.area !== "all" && s.group !== S.area) return false;
+  if (S.q) {
+    const hay = lower(`${s.name} ${s.waterway} ${s.place} ${s.group}`);
+    if (!S.q.split(/\s+/).every((w) => hay.includes(w))) return false;
+  }
+  return true;
+}
+function crossRow({ s, c, cs }) {
+  return `<li><button type="button" class="cx-row ${cs.state}" data-id="${esc(s.id)}">
+    <span class="cx-ic">${crossIcon(c.kind)}</span>
+    <span class="cx-main"><b>${esc(crossName(c))}</b> at ${esc(s.place || s.name)}<span class="cx-sub">${esc(s.waterway)} · ${esc(s.group)}${s.time ? ` · ${esc(tFmt(s.time))}` : ""}</span></span>
+    <span class="cx-val"><span class="num">${fmtDiff(cs.diff)} m</span>${arrowSvg(s.tendency, "cx-arrow")}</span>
+  </button></li>`;
+}
+function renderCrossings() {
+  const view = $("#view");
+  const list = allCrossings((s) => matchesPlace(s));
+  const by = (st, kind) => list.filter((x) => x.cs.state === st && x.c.kind === kind).sort((a, b) => b.cs.diff - a.cs.diff);
+  const roadOver = by("over", "road"), roadNear = by("near", "road");
+  const roadClear = by("clear", "road"), roadUnknown = list.filter((x) => x.c.kind === "road" && x.cs.state === "unknown");
+  const damOver = by("over", "storage");
+  const damBelow = list.filter((x) => x.c.kind === "storage" && x.cs.state !== "over").sort((a, b) => (b.cs.diff ?? -99) - (a.cs.diff ?? -99));
+  const section = (title, items, note) => items.length ? `<section class="cx-sec"><h2>${title} <span>${items.length}</span></h2>${note ? `<p class="g-sub">${note}</p>` : ""}<ol class="cx-list">${items.map(crossRow).join("")}</ol></section>` : "";
+  const total = list.filter((x) => x.c.kind === "road").length;
+  view.innerHTML = `
+    <div class="cx-intro">
+      <p class="cx-summary"><b>${roadOver.length}</b> of ${total} gauged bridges, roads and causeways ${roadOver.length === 1 ? "is" : "are"} under water${roadNear.length ? `, and <b>${roadNear.length}</b> ${roadNear.length === 1 ? "is" : "are"} within ${NEAR_M} m` : ""}.</p>
+      <p class="g-sub">These are the crossings at BoM gauges, with each level worked out from BoM's bulletins and compared with the latest reading. They're a guide only: other roads flood too, and a crossing can be unsafe before the water reaches it. Check road closures on <a href="https://qldtraffic.qld.gov.au/" target="_blank" rel="noopener">QLDTraffic</a> (13 19 40). Never drive through floodwater.</p>
+    </div>
+    ${roadOver.length ? section("Under water", roadOver) : `<p class="empty">No gauged crossings ${S.area !== "all" || S.q ? "in this selection " : ""}are under water at the latest readings.</p>`}
+    ${section(`Within ${NEAR_M} m of the water`, roadNear)}
+    ${section("Dams and weirs overflowing", damOver, "Water above the spillway, weir crest or full supply level.")}
+    ${roadClear.length + roadUnknown.length ? `<details class="cx-more"><summary>Clear crossings (${roadClear.length + roadUnknown.length})</summary><ol class="cx-list">${[...roadClear, ...roadUnknown].map(crossRow).join("")}</ol></details>` : ""}
+    ${damBelow.length ? `<details class="cx-more"><summary>Dams and weirs below their spillway (${damBelow.length})</summary><ol class="cx-list">${damBelow.map(crossRow).join("")}</ol></details>` : ""}`;
+  view.querySelectorAll(".cx-row").forEach((b) => b.addEventListener("click", () => select(b.dataset.id)));
+}
+function stopCrossing(s) {
+  const hits = (s.crossings || []).filter((c) => c.kind === "road").map((c) => ({ c, cs: crossingState(s, c) }))
+    .filter((x) => x.cs.state === "over" || x.cs.state === "near").sort((a, b) => b.cs.diff - a.cs.diff);
+  if (!hits.length) return "";
+  const { c, cs } = hits[0];
+  return `<span class="stop-cx ${cs.state}">${crossIcon(c.kind)}${esc(crossName(c))} ${fmtDiff(cs.diff)}</span>`;
+}
+
 // ------------------------------------------------------------------ rivers view
 function relText(s) {
   const lv = s.levels || {};
@@ -1072,6 +1246,7 @@ function renderRivers() {
           <span class="stop-track"><span class="node cls-${key}"></span></span>
           <span class="stop-name">${name}</span>
           <span class="stop-rel">${esc(relText(s))}</span>
+          ${stopCrossing(s)}
         </button></li>`;
     };
     const worstOf = (list) => list.reduce((a, s) => (CLASSES[clsKey(s)].rank > CLASSES[a].rank ? clsKey(s) : a), "none");
@@ -1174,15 +1349,16 @@ function renderGauge() {
     ? "worked out from BoM's flood levels"
     : s.classTime && s.timeSource === "feed" ? `BoM, as at ${tFmt(s.classTime)}` : "as reported by BoM";
   const tendNote = s.tendencySource === "computed" ? " (last hour of readings)" : "";
-  const rows = [["minor", lv.minor], ["moderate", lv.moderate], ["major", lv.major]].filter(([, v]) => v != null).map(([k, v]) => {
+  const floodRows = [["minor", lv.minor], ["moderate", lv.moderate], ["major", lv.major]].filter(([, v]) => v != null).map(([k, v]) => {
     const reached = s.height != null && s.height >= v;
     const diff = s.height == null ? "" : `${s.height >= v ? "+" : "−"}${Math.abs(s.height - v).toFixed(2)}`;
-    return `<tr class="${reached ? "reached" : ""}"><td><span class="lab"><span class="swatch sw-${k}"></span>${CLASSES[k].label}</span></td><td class="num">${v.toFixed(2)}</td><td class="num">${diff}</td></tr>`;
-  }).join("");
-  const crossings = [
-    ...(s.crossing?.text ? [`${esc(s.crossing.text)} (from the bulletin)`] : []),
-    ...(s.crossings || []).map((c) => `${esc(c.name)} at ${c.level.toFixed(2)} m`),
-  ];
+    return { level: v, html: `<tr class="${reached ? "reached" : ""}"><td><span class="lab"><span class="swatch sw-${k}"></span>${CLASSES[k].label}</span></td><td class="num">${v.toFixed(2)}</td><td class="num">${diff}</td></tr>` };
+  });
+  const crossings = (s.crossings || []).map((c) => ({ c, cs: crossingState(s, c) }));
+  const crossFacts = crossings.filter(({ c }) => c.kind !== "tide" || crossings.length === 1)
+    .map(({ c, cs }) => `<span class="cx-fact">${crossIcon(c.kind)}${esc(crossingPhrase(c, cs))}${crossingTag(c, cs)}</span>`);
+  const crossRows = crossings.map(({ c, cs }) => ({ level: c.level, html:
+    `<tr class="cx ${cs.state === "over" ? "reached" : ""}"><td><span class="lab">${crossIcon(c.kind)}${esc(crossName(c))}</span></td><td class="num">${c.level.toFixed(2)}</td><td class="num">${fmtDiff(cs.diff)}</td></tr>` }));
 
   view.innerHTML = `
     <button class="back" type="button" id="back">← All rivers</button>
@@ -1199,16 +1375,17 @@ function renderGauge() {
           <dt>Reading</dt><dd>${esc(tFmt(s.time))}${s.time ? ` · ${esc(ago(s.time))}` : ""}</dd>
           <dt>Tendency</dt><dd><span class="tend">${s.tendency ? `<svg viewBox="0 0 12 12" fill="var(--ink-2)">${tendencyPath(s.tendency)}</svg>${esc(s.tendency)}${tendNote}` : "Not reported"}</span></dd>
           <dt>Class</dt><dd>${esc(CLASSES[key].label)}${s.classSource ? ` · ${esc(classNote)}` : ""}</dd>
-          ${crossings.length ? `<dt>Crossing</dt><dd>${crossings.join("<br>")}</dd>` : ""}
+          ${crossFacts.length ? `<dt>Crossing</dt><dd class="cx-facts">${crossFacts.join("")}</dd>` : ""}
           <dt>Datum</dt><dd>${s.datum === "AHD" ? "AHD, roughly metres above mean sea level" : s.datum === "LGH" ? "Local gauge height (zero near the dry-weather low)" : "Not stated"}</dd>
         </dl>
       </div>
     </div>
     <div>
-      <h3 class="section-title">Flood levels</h3>
-      ${hasLv ? `<table class="levels"><thead><tr><th>Class</th><th class="num">Level (m)</th><th class="num">Now vs level</th></tr></thead><tbody>${rows}</tbody></table>
-        <p class="g-sub" style="margin:6px 0 0">Source: ${esc(s.levelsSource || "BoM")}</p>`
-        : `<p class="g-sub" style="margin:0">${S.latest.demo ? "This sample snapshot has flood levels for Kedron Brook at Mitchelton only. The live site reads them for every gauge from BoM's flood-warning map." : "BoM's feed has not supplied flood classification levels for this gauge. Many smaller gauges have none."}</p>`}
+      <h3 class="section-title">${crossRows.length ? "Flood and crossing levels" : "Flood levels"}</h3>
+      ${hasLv || crossRows.length ? `<table class="levels"><thead><tr><th>Level</th><th class="num">Height (m)</th><th class="num">Now vs level</th></tr></thead><tbody>${
+        [...floodRows, ...crossRows].sort((a, b) => a.level - b.level).map((r) => r.html).join("")}</tbody></table>
+        <p class="g-sub" style="margin:6px 0 0">${hasLv ? `Flood levels: ${esc(s.levelsSource || "BoM")}.` : "BoM's feed has no flood classification levels for this gauge."}${crossRows.length ? " Crossing levels: worked out from BoM's bulletin, which gives the water's height above or below each one; a guide only." : ""}</p>`
+        : `<p class="g-sub" style="margin:0">BoM's feed has not supplied flood classification levels for this gauge. Many smaller gauges have none.</p>`}
     </div>
     <div>
       <div class="chart-head"><h3 class="section-title" style="margin:0">Water level</h3>
@@ -1233,7 +1410,7 @@ function renderGauge() {
     view.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", x === b));
     drawHydro();
   }));
-  loadHistory().then(() => { if (S.selected === s.id && S.view === "gauge") drawHydro(); });
+  loadHistory(s.id).then(() => { if (S.selected === s.id && S.view === "gauge") drawHydro(); });
 }
 
 function seriesFor(s) {
@@ -1279,7 +1456,15 @@ function drawHydro() {
   thr.forEach(([k, v], i) => {
     if (i === 0 || v <= hi + span0 * 1.5 || v <= Math.max(hi, lv.minor ?? hi) + 0.5) inView.push([k, v]); else offView.push([k, v]);
   });
+  // Crossing levels (bridges, roads, spillways): drawn when within reach of the data, otherwise listed.
+  const dataLo = lo, dataHi = hi;
+  (s.crossings || []).filter((c) => c.kind !== "tide").forEach((c) => {
+    const k = `cx-${c.kind}`, label = crossName(c);
+    const near = c.level <= dataHi + Math.max(span0 * 1.5, 1) && c.level >= dataLo - Math.max(span0 * 1.5, 1);
+    (near ? inView : offView).push([k, c.level, label, c.level < dataLo ? "↓" : "↑"]);
+  });
   inView.forEach(([, v]) => { lo = Math.min(lo, v); hi = Math.max(hi, v); });
+  const refLabel = (k, v, label) => `${label || CLASSES[k].short} ${v.toFixed(2)}`;
   // Levels above the plotted range are listed in the top margin instead of squashing the trace.
   const W = Math.max(280, el.clientWidth || 380);
   const m = { l: 42, r: 98, t: 12 + offView.length * 14, b: 24 };
@@ -1306,14 +1491,21 @@ function drawHydro() {
   }
   svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}" style="stroke:var(--rule-strong)"/></g>`;
 
-  // threshold reference lines
+  // reference lines: flood levels (coloured) and crossings (dark, dashed); labels spaced so they never overlap
   svg += '<g class="thr">';
-  inView.forEach(([k, v]) => {
-    svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${ys(v)}" y2="${ys(v)}" style="stroke:var(--st-${k})"/>
-      <text x="${m.l + iw + 6}" y="${ys(v) + 3.5}" style="fill:var(--ink-2)">${CLASSES[k].short} ${v.toFixed(2)}</text>`;
+  const labels = inView.map(([k, v, label]) => ({ k, v, label, y: ys(v) })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < labels.length; i++) labels[i].ly = Math.max(labels[i].y, (labels[i - 1].ly ?? labels[i - 1].y) + 12);
+  if (labels.length) labels[0].ly = labels[0].y;
+  const overflow = (labels.length ? labels[labels.length - 1].ly : 0) - (m.t + ih);
+  if (overflow > 0) labels.forEach((l) => { l.ly -= overflow; });
+  labels.forEach(({ k, v, label, y, ly }) => {
+    const cx = k.startsWith("cx-");
+    svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${y}" y2="${y}" class="${cx ? "ref-cx" : ""}" style="stroke:${cx ? "var(--ink)" : `var(--st-${k})`}"/>`;
+    if (Math.abs(ly - y) > 1.5) svg += `<path d="M${m.l + iw} ${y} L${m.l + iw + 4} ${ly}" class="leader"/>`;
+    svg += `<text x="${m.l + iw + 6}" y="${ly + 3.5}" style="fill:${cx ? "var(--ink)" : "var(--ink-2)"}">${esc(refLabel(k, v, label))}</text>`;
   });
-  offView.forEach(([k, v], i) => {
-    svg += `<text x="${m.l + iw + 6}" y="${10 + i * 14}" style="fill:var(--ink-3)">${CLASSES[k].short} ${v.toFixed(2)} ↑</text>`;
+  offView.forEach(([k, v, label, dir], i) => {
+    svg += `<text x="${m.l + iw + 6}" y="${10 + i * 14}" style="fill:var(--ink-3)">${esc(refLabel(k, v, label))} ${dir || "↑"}</text>`;
   });
   svg += "</g>";
 
@@ -1354,7 +1546,8 @@ function drawHydro() {
     cross.querySelector("line").setAttribute("x1", cx); cross.querySelector("line").setAttribute("x2", cx);
     cross.querySelector("circle").setAttribute("cx", cx); cross.querySelector("circle").setAttribute("cy", cy);
     tip.hidden = false;
-    tip.innerHTML = `<span class="num">${best[1].toFixed(2)} m</span> · ${esc(fmtRow.format(minToDate(best[0])))}`;
+    const overs = (s.crossings || []).filter((c) => c.kind === "road" && best[1] >= c.level).map((c) => `${crossName(c)} +${(best[1] - c.level).toFixed(2)} m`);
+    tip.innerHTML = `<span class="num">${best[1].toFixed(2)} m</span> · ${esc(fmtRow.format(minToDate(best[0])))}${overs.length ? `<br>${esc(overs.join(", "))}` : ""}`;
     const px = (cx / W) * r.width, py = (cy / H) * r.height - 10;
     tip.style.left = `${Math.min(Math.max(px, 70), r.width - 70)}px`;
     tip.style.top = `${Math.max(py, 24)}px`;
@@ -1390,9 +1583,13 @@ function showView(v) {
   S.view = v;
   $("#tab-rivers").setAttribute("aria-selected", v === "rivers");
   $("#tab-gauge").setAttribute("aria-selected", v === "gauge");
-  $("#filters").hidden = v !== "rivers";
-  if (v === "rivers") renderRivers(); else renderGauge();
-  if (v === "gauge") {
+  $("#tab-crossings").setAttribute("aria-selected", v === "crossings");
+  $("#filters").hidden = v === "gauge";
+  if (v === "rivers") renderRivers(); else if (v === "crossings") renderCrossings(); else renderGauge();
+  if (v === "crossings") { try { history.replaceState(null, "", "#crossings"); } catch (e) { /* not available */ } }
+  else if (v === "rivers") { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* not available */ } }
+  if (S.map) { renderLabels(); applyFilters(); }
+  if (v !== "rivers") {
     const panel = $(".panel");
     if (getComputedStyle(panel).overflowY === "auto") panel.scrollTop = 0;
   }
@@ -1460,7 +1657,6 @@ function renderAll() {
 async function refresh() {
   try {
     S.latest = await loadLatest();
-    S.historyLoading = null;
     renderAll();
   } catch (e) { /* keep showing the last good data; the timestamp shows its age */ }
 }
@@ -1499,9 +1695,10 @@ async function boot() {
   });
   $("#tab-rivers").addEventListener("click", () => showView("rivers"));
   $("#tab-gauge").addEventListener("click", () => S.selected && showView("gauge"));
+  $("#tab-crossings").addEventListener("click", () => showView("crossings"));
   const hash = location.hash.match(/^#g(\w+)$/);
   if (hash && S.byId.has(hash[1])) select(hash[1]);
-  else showView("rivers");
+  else showView(location.hash === "#crossings" ? "crossings" : "rivers");
   let resizeT;
   new ResizeObserver(() => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (S.view === "gauge") drawHydro(); }, 120); }).observe($(".panel"));
   if (!S.embedded) setInterval(refresh, REFRESH_MS);

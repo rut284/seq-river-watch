@@ -48,6 +48,7 @@ DEFAULT_MAP_PAGES = ["IDQ65325"]
 STATION_PRODUCT = "IDQ65389"
 ORDER_BLOCK = 1000  # station order = bulletin position * ORDER_BLOCK + row in that bulletin
 HCS_PREFIXES = ["IDQ65911", "IDQ65910"]
+HCS_BACKFILL_MAX = 12   # older IDQ65911 files to read after a gap (BoM keeps them listed for a few hours)
 HISTORY_DAYS = 7
 FULL_SCAN_EVERY = timedelta(hours=24)
 TABLE_PROBE_EVERY = timedelta(hours=24)
@@ -224,8 +225,62 @@ def minute_rounded(lat, lon) -> bool:
     return all(abs(v * 60 - round(v * 60)) < 0.006 for v in (lat, lon))
 
 
+# ---------------------------------------------------------------- crossings
+
+def crossing_kind(feature: str) -> str:
+    """road: bridges, roads, causeways and fords; storage: dam spillways, weirs, full supply; tide."""
+    f = feature.lower()
+    if re.search(r"spillway|full supply|\bfsl\b|weir|crest|\bdam\b", f):
+        return "storage"
+    if re.search(r"\bhat\b|tide", f):
+        return "tide"
+    if re.search(r"bridge|road|\brd\b|causeway|crossing|approach|ford|culvert|deck|floodway|street|highway|hwy", f):
+        return "road"
+    return "other"
+
+
+def derive_crossing(row: dict | None) -> dict | None:
+    """'1.97 above Bridge' with a 5.20 m reading means the bridge is at 3.23 m on this gauge."""
+    if not row:
+        return None
+    c, h = row.get("crossing") or {}, row.get("height")
+    if h is None or "distance" not in c or c.get("relation") not in ("above", "below"):
+        return None
+    level = h + c["distance"] if c["relation"] == "below" else h - c["distance"]
+    return {"name": c["feature"], "level": round(level, 2), "kind": crossing_kind(c["feature"]),
+            "datum": row.get("datum"), "source": "BoM river height bulletin"}
+
+
+def merge_crossings(cached: list, derived: dict | None, table: list, datum: str | None) -> list:
+    """Latest known level for each named crossing at a gauge (bulletin > station table > earlier runs)."""
+    found: dict[str, dict] = {}
+    for c in cached or []:
+        if isinstance(c, dict) and c.get("name") and isinstance(c.get("level"), (int, float)):
+            found[c["name"]] = {"kind": crossing_kind(c["name"]), "source": c.get("source", "BoM"), **c}
+    for c in table or []:
+        if c.get("datum") and datum and c["datum"] != datum:
+            continue
+        found[c["name"]] = {"name": c["name"], "level": c["level"], "kind": crossing_kind(c["name"]),
+                            "datum": c.get("datum") or datum, "source": "BoM station table"}
+    if derived and (not derived.get("datum") or not datum or derived["datum"] == datum):
+        old = found.get(derived["name"])
+        if old and abs(old["level"] - derived["level"]) > 0.05:
+            log(f"crossing level changed: {derived['name']} {old['level']} -> {derived['level']}")
+        found[derived["name"]] = derived
+    return sorted(found.values(), key=lambda c: c["level"])
+
+
+class PreviousDataError(RuntimeError):
+    """The published history exists but couldn't be read; publishing now would wipe it."""
+
+
 def load_previous(base: str | None) -> tuple[dict, dict]:
-    """Return (history series, meta) from the last published site, or empty ones."""
+    """Return (history series, meta) from the last published site, or empty ones on the first run.
+
+    A missing file (404, or no local file) means this is the first run. Any other failure raises
+    PreviousDataError, so the run stops and the site keeps its existing 7-day history rather
+    than replacing it with an empty one.
+    """
     if not base:
         return {}, {}
     out = []
@@ -234,13 +289,21 @@ def load_previous(base: str | None) -> tuple[dict, dict]:
             if base.startswith(("http://", "https://")):
                 url = base.rstrip("/") + "/data/" + name + f"?t={int(time.time())}"
                 req = urllib.request.Request(url, headers={"User-Agent": "seq-river-watch-collector"})
-                with urllib.request.urlopen(req, timeout=30) as resp:
+                with urllib.request.urlopen(req, timeout=60) as resp:
                     out.append(json.loads(resp.read().decode("utf-8")))
             else:
                 out.append(json.loads((Path(base) / name).read_text(encoding="utf-8")))
-        except (urllib.error.URLError, OSError, ValueError) as exc:
-            log(f"previous {name}: not available ({exc}); starting fresh")
+        except FileNotFoundError:
+            log(f"previous {name}: none yet; starting fresh")
             out.append({})
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                log(f"previous {name}: none yet; starting fresh")
+                out.append({})
+            else:
+                raise PreviousDataError(f"couldn't read the published {name} ({exc})") from exc
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            raise PreviousDataError(f"couldn't read the published {name} ({exc})") from exc
     history, meta = out
     series = history.get("series", {}) if isinstance(history, dict) else {}
     return {k: v for k, v in series.items() if isinstance(v, list)}, meta if isinstance(meta, dict) else {}
@@ -426,11 +489,17 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         # 3. 15-minute observations (BOM-HCS) -------------------------------
         hcs_files = []
         hcs_count = 0
+        last_used = meta.get("lastHcsFile") or ""
+        backlog = sorted(n for n in names if re.fullmatch(r"IDQ65911_\d{14}\.hcs", n) and n > last_used)
+        # Normally just the newest file (each holds ~3 hours). After a gap, older retained files fill it in.
+        older = backlog[-HCS_BACKFILL_MAX:-1] if last_used and len(backlog) > 1 else []
+        if older:
+            log(f"backfilling from {len(older)} older 15-minute files")
+        todo = older + [n for n in (latest_named(names, p) for p in HCS_PREFIXES) if n]
         for prefix in HCS_PREFIXES:
-            name = latest_named(names, prefix)
-            if not name:
+            if not latest_named(names, prefix):
                 log(f"HCS {prefix}: no file in listing")
-                continue
+        for name in todo:
             try:
                 text = src.get(name)
                 rows = bp.parse_hcs(text, wanted)
@@ -438,8 +507,10 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
                 hcs_count += len(rows)
                 readings.extend((sid, t, v, datum, "feed") for sid, t, v, datum in rows)
                 every = bp.parse_hcs(text)
-                if rows:
+                if rows and name not in older:
                     annotate("notice", name, f"{len(every)} water-level readings in file, {len(rows)} for {len({r[0] for r in rows})} gauges in this bulletin")
+                elif rows:
+                    pass  # backfill file; summarised in the run's totals
                 else:
                     data_lines = [ln for ln in text.splitlines() if ln.strip() and not ln.startswith("#")]
                     head = [ln for ln in text.splitlines() if ln.startswith("#")][:3]
@@ -449,7 +520,10 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
             except (OSError, EOFError, ftplib.Error, bp.ParseError) as exc:
                 log(f"HCS {name}: {exc}")
                 annotate("warning", f"{name} not used", str(exc))
-        status["observations"] = {"ok": hcs_count > 0, "files": hcs_files, "readings": hcs_count}
+        status["observations"] = {"ok": hcs_count > 0, "files": hcs_files, "readings": hcs_count, "backfilled": len(older)}
+        newest = latest_named(names, "IDQ65911")
+        if newest and newest in hcs_files:
+            meta["lastHcsFile"] = newest
         if hcs_count:
             got_new_data = True
 
@@ -584,14 +658,15 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
                 levels, levels_src = tl, "BoM station history table"
         elif cached.get("levels"):
             levels, levels_src = cached["levels"], cached.get("levelsSource")
-        crossings = tb.get("crossings") or cached.get("crossings") or []
+        crossings = merge_crossings(cached.get("crossingLevels") or cached.get("crossings") or [],
+                                    derive_crossing(reported.get(sid)), tb.get("crossings") or [], st.get("datum"))
 
         from_map = str(coord_src or "").startswith("BoM flood warning map")
         meta_st[sid] = {k: v for k, v in {
             "lat": lat if from_map else cached.get("lat"),
             "lon": lon if from_map else cached.get("lon"),
             "coordSource": coord_src if from_map else cached.get("coordSource"),
-            "levels": levels or None, "levelsSource": levels_src, "crossings": crossings or None,
+            "levels": levels or None, "levelsSource": levels_src, "crossingLevels": crossings or None,
         }.items() if v is not None}
 
         # latest reading: whichever source is newest
@@ -663,6 +738,11 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
     }
     write_json(out_dir / "latest.json", latest)
     write_json(out_dir / "history.json", {"generated": latest["generated"], "days": HISTORY_DAYS, "series": history_out})
+    # One small file per gauge for the website (the page loads only the gauge being viewed).
+    per_gauge = out_dir / "history"
+    per_gauge.mkdir(exist_ok=True)
+    for sid, points in history_out.items():
+        write_json(per_gauge / f"{sid}.json", {"id": sid, "generated": latest["generated"], "days": HISTORY_DAYS, "points": points})
     write_json(out_dir / "meta.json", meta)
     counts: dict = {}
     for s in out_stations:
@@ -673,10 +753,14 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
     rounded = sum(1 for s in out_stations if s["coordAccuracy"] == "rounded")
     with_levels = sum(1 for s in out_stations if s["levels"])
     with_history = sum(1 for s in out_stations if s["historyPoints"] >= 2)
+    road = [(s, c) for s in out_stations for c in s["crossings"] if c["kind"] == "road"]
+    flooded = [f"{c['name']} at {s['name']} (+{s['height'] - c['level']:.2f} m)"
+               for s, c in road if s["height"] is not None and s["height"] >= c["level"]]
     annotate("notice", "River heights updated",
              f"{len(out_stations)} gauges ({', '.join(f'{k} {v}' for k, v in sorted(counts.items()))}); "
              f"{located} on the map ({surveyed} at council-surveyed positions, {rounded} only approximate), "
-             f"{with_levels} with flood levels, {with_history} with 2+ readings of history. "
+             f"{with_levels} with flood levels, {with_history} with 2+ readings of history; "
+             f"{len(road)} road crossings known, {len(flooded)} under water. "
              "Bulletins " + ", ".join(f"{b} {'OK' if st.get('ok') else 'missing'}" for b, st in status["bulletins"].items()) + ", "
              f"map page {'OK' if status.get('mapPages', {}).get('ok') else 'missing'}, "
              f"15-min readings {status.get('observations', {}).get('readings', 0)}, "
@@ -693,6 +777,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         f"| Council gauge positions | {surveyed} gauges, register read {status['locations']['fetched'] or 'never'} |",
         "", f"**{len(out_stations)} gauges**: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())),
         f"{located} on the map · {with_levels} with flood levels · {with_history} with history",
+        "", f"**Crossings under water ({len(flooded)} of {len(road)}):** " + ("; ".join(flooded) or "none"),
     ])
     return 0
 
@@ -720,6 +805,10 @@ def main(argv=None) -> int:
             fixed = json.loads(Path(args.council_file).read_text(encoding="utf-8"))
             fetcher = lambda: (fixed, [])  # noqa: E731
         return run(source, args.previous, Path(args.out), now, Path(args.catalogue), council_fetcher=fetcher)
+    except PreviousDataError as exc:
+        log(f"{exc} - stopping so the published history isn't lost")
+        annotate("error", "Published history not readable", f"{exc}. Nothing was published; the next run will try again.")
+        return 3
     except (OSError, EOFError, ftplib.Error) as exc:
         log(f"could not reach the BoM feed: {exc}")
         return 2
