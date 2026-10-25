@@ -894,7 +894,7 @@ function renderLegend() {
     <div class="row">${dot("below", "falling")}Falling</div>
     <div class="row">${dot("below")}Steady or not reported</div>
     ${S.basemap === "outline" ? '<hr><div class="row"><svg class="shape" viewBox="0 0 18 18" aria-hidden="true"><path d="M1 9h16" stroke="var(--chain)" stroke-width="2.5"/></svg>Gauges joined downstream</div>' : ""}
-    ${S.catchOn ? '<hr><div class="row"><span class="catch-key"></span>Catchment, shaded by its most serious gauge</div><div class="row"><span class="catch-key path"></span>Selected gauge\'s path to the bay</div>' : ""}`;
+    ${S.catchOn ? '<hr><div class="row"><span class="catch-key"></span>Catchment, shaded by its most serious gauge</div><div class="row"><span class="catch-key path"></span>Selected gauge\'s catchment and route</div>' : ""}`;
 }
 
 // ------------------------------------------------------------------ catchments overlay
@@ -1492,7 +1492,11 @@ async function boot() {
     $("#catch-btn").addEventListener("click", () => setCatchments(!S.catchOn));
   }
   $("#q").addEventListener("input", (e) => { S.q = lower(e.target.value.trim()); applyFilters(); });
-  $("#area").addEventListener("change", (e) => { S.area = e.target.value; applyFilters(); fitVisible(); });
+  $("#area").addEventListener("change", (e) => {
+    S.area = e.target.value; applyFilters(); fitVisible();
+    const panel = $(".panel");
+    if (getComputedStyle(panel).overflowY === "auto") panel.scrollTop = 0;
+  });
   $("#tab-rivers").addEventListener("click", () => showView("rivers"));
   $("#tab-gauge").addEventListener("click", () => S.selected && showView("gauge"));
   const hash = location.hash.match(/^#g(\w+)$/);
