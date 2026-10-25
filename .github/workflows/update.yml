@@ -1,11 +1,22 @@
 # Collects river heights from the Bureau of Meteorology and publishes the website.
-# Runs about every 15 minutes. GitHub may start scheduled runs a few minutes late.
+#
+# Timing: GitHub starts scheduled workflows late or skips them when busy (on this repository
+# they ran about every 4 hours instead of every 15 minutes). So each run ends by waiting until
+# 15 minutes after it started and then starting the next run itself. The schedule below only
+# restarts that chain if it ever stops. Only one run at a time: the concurrency group cancels
+# any extra queued run, so the chain never doubles up (cancelled runs in the Actions list are
+# normal).
 name: Update river heights
 
 on:
   schedule:
     - cron: "4,19,34,49 * * * *"
   workflow_dispatch:
+    inputs:
+      delay:
+        description: "Minutes from the start of this run to the next one"
+        required: false
+        default: "15"
   push:
     branches: [main]
     paths:
@@ -17,6 +28,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write   # lets the run start the next run
 
 concurrency:
   group: river-watch-pages
@@ -29,7 +41,12 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
+    outputs:
+      started: ${{ steps.clock.outputs.started }}
     steps:
+      - id: clock
+        run: echo "started=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -51,3 +68,30 @@ jobs:
 
       - id: deploy
         uses: actions/deploy-pages@v4
+
+  next:
+    # Runs even if the update failed (e.g. BoM briefly unreachable), so the chain keeps going.
+    # A run cancelled by hand stops the chain; the schedule restarts it later.
+    needs: update
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Wait, then start the next update
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STARTED: ${{ needs.update.outputs.started }}
+          DELAY_MIN: ${{ github.event.inputs.delay || '15' }}
+        run: |
+          now=$(date +%s)
+          started=${STARTED:-$now}
+          delay=$(( ${DELAY_MIN%%.*} * 60 ))
+          wait=$(( started + delay - now ))
+          [ "$wait" -gt 1200 ] && wait=1200
+          if [ "$wait" -gt 0 ]; then echo "Waiting ${wait}s"; sleep "$wait"; fi
+          code=$(curl -sS -o response.txt -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/update.yml/dispatches" \
+            -d '{"ref":"main"}')
+          echo "GitHub answered $code"
+          if [ "$code" != "204" ]; then cat response.txt; exit 1; fi
