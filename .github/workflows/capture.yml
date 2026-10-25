@@ -1,0 +1,47 @@
+# Saves copies of BoM feed files into tests/fixtures/captures/ so a new bulletin can be
+# examined and tested. Run it from Actions -> "Capture BoM feed files" -> Run workflow.
+name: Capture BoM feed files
+
+on:
+  workflow_dispatch:
+    inputs:
+      files:
+        description: "File names in ftp.bom.gov.au/anon/gen/fwo, separated by spaces"
+        required: true
+        default: "IDQ60285.html"
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download from BoM's feed
+        env:
+          FILES: ${{ github.event.inputs.files }}
+        run: |
+          mkdir -p tests/fixtures/captures
+          python - <<'PY'
+          import ftplib, io, os, re
+          names = [n for n in os.environ["FILES"].split() if re.fullmatch(r"[A-Za-z0-9._-]+", n)]
+          with ftplib.FTP("ftp.bom.gov.au", timeout=60) as ftp:
+              ftp.login()
+              ftp.cwd("/anon/gen/fwo")
+              for name in names:
+                  buf = io.BytesIO()
+                  ftp.retrbinary(f"RETR {name}", buf.write)
+                  with open(f"tests/fixtures/captures/{name}", "wb") as fh:
+                      fh.write(buf.getvalue())
+                  print(f"::notice title=Captured {name}::{len(buf.getvalue())} bytes")
+          PY
+      - name: Commit the copies
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/fixtures/captures
+          if git diff --cached --quiet; then echo "No change"; exit 0; fi
+          git commit -m "Capture BoM feed files: ${{ github.event.inputs.files }}"
+          git push
