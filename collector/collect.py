@@ -37,12 +37,16 @@ import bom_parse as bp
 HERE = Path(__file__).resolve().parent
 FTP_HOST = "ftp.bom.gov.au"
 FTP_DIR = "/anon/gen/fwo"
-BULLETIN = "IDQ60286"
+# River height bulletins covered, in display order:
+#   IDQ60286  Brisbane, Pine and Caboolture rivers and tributaries
+#   IDQ60285  Gold Coast rivers, Logan-Albert rivers and Tingalpa Creek
+BULLETINS = ["IDQ60286", "IDQ60285"]
 # BoM flood-warning map page that carries coordinates and flood levels for these gauges
 # (found on the live feed 23 Oct 2026). Pages that worked before are remembered in meta.json.
 DEFAULT_MAP_PAGES = ["IDQ65325"]
-# Product id used in the bulletin's station plot/table links
+# Product id used in station plot/table links when a bulletin hasn't said (IDQ60286's gauges)
 STATION_PRODUCT = "IDQ65389"
+ORDER_BLOCK = 1000  # station order = bulletin position * ORDER_BLOCK + row in that bulletin
 HCS_PREFIXES = ["IDQ65911", "IDQ65910"]
 HISTORY_DAYS = 7
 FULL_SCAN_EVERY = timedelta(hours=24)
@@ -65,16 +69,6 @@ COUNCIL_LOCATIONS = [
 ]
 COUNCIL_REFRESH = timedelta(hours=24)
 
-# BoM weather radar images (anonymous FTP; see BoM's "Radar Images" user guide). Each image is a
-# transparent PNG of rain echoes; its position comes from the matching IDRnnnx.map coordinates file.
-RADAR_DIR = "/anon/gen/radar"
-RADAR_COORDS_DIR = "/anon/gen/radar_transparencies/coordinates"
-RADARS = [
-    {"id": "IDR662", "label": "Mt Stapylton, 256 km", "site": [-27.7178, 153.2400]},
-    {"id": "IDR503", "label": "Marburg, 128 km", "site": [-27.6080, 152.5390]},
-]
-RADAR_FRAMES = 8            # BoM issues a frame about every 5-6 minutes: ~40 minutes of loop
-RADAR_MAP_REFRESH = timedelta(days=30)
 SEQ_BOX = (-28.6, -26.3, 151.4, 153.8)  # lat min, lat max, lon min, lon max
 
 
@@ -230,134 +224,6 @@ def minute_rounded(lat, lon) -> bool:
     return all(abs(v * 60 - round(v * 60)) < 0.006 for v in (lat, lon))
 
 
-# ---------------------------------------------------------------- radar
-
-def parse_radar_map(text: str) -> list | None:
-    """Image bounds [[south, west], [north, east]] from a BoM IDRnnnx.map coordinates file.
-
-    Reads labelled edges (North/South/East/West, or Top/Bottom/Left/Right latitude/longitude)
-    when present; otherwise the corner latitudes and longitudes listed in the file.
-    """
-    flat = " ".join(text.split())
-    num = r"(-?\d+(?:\.\d+)?)"
-    # BoM's format: Gnomonic projection with corners lon0/lat0 (SW), lon1/lat1 (NW), lon2/lat2 (NE), lon3/lat3 (SE).
-    # The edges are slightly skewed, so use each edge's midpoint (within ~1 km for the 128 km image).
-    corners = {k: float(v) for k, v in re.findall(r"\b((?:lat|lon)[0-3])\s*=\s*(-?\d+(?:\.\d+)?)", flat)}
-    if len(corners) == 8:
-        west = (corners["lon0"] + corners["lon1"]) / 2
-        east = (corners["lon2"] + corners["lon3"]) / 2
-        south = (corners["lat0"] + corners["lat3"]) / 2
-        north = (corners["lat1"] + corners["lat2"]) / 2
-        if -45 < south < north < -8 and 105 < west < east < 160:
-            return [[round(south, 5), round(west, 5)], [round(north, 5), round(east, 5)]]
-    edges = {}
-    for key, names in (("n", "north|top"), ("s", "south|bottom"), ("e", "east|right"), ("w", "west|left")):
-        m = re.search(rf"(?:{names})\w*\s*(?:lat\w*|lon\w*)?\s*[:=]?\s*{num}", flat, re.I)
-        if m:
-            edges[key] = float(m.group(1))
-    if len(edges) == 4:
-        s, n, w, e = edges["s"], edges["n"], edges["w"], edges["e"]
-        if s > n:
-            s, n = n, s
-        if w > e:
-            w, e = e, w
-        if -45 < s < n < -8 and 105 < w < e < 160:
-            return [[s, w], [n, e]]
-    lats = sorted({float(x) for x in re.findall(r"-\d{1,2}\.\d+", flat) if -45 < float(x) < -8})
-    lons = sorted({float(x) for x in re.findall(r"(?<![\d.-])1[0-5]\d\.\d+", flat) if 105 < float(x) < 160})
-    if len(lats) >= 2 and len(lons) >= 2:
-        return [[lats[0], lons[0]], [lats[-1], lons[-1]]]
-    return None
-
-
-def png_palette(data: bytes) -> list[str]:
-    """Opaque colours of an indexed PNG's palette, in palette order (BoM orders them by rain rate)."""
-    if data[:8] != b"\x89PNG\r\n\x1a\n":
-        return []
-    pos, plte, trns = 8, b"", b""
-    while pos + 8 <= len(data):
-        length = int.from_bytes(data[pos:pos + 4], "big")
-        kind = data[pos + 4:pos + 8]
-        body = data[pos + 8:pos + 8 + length]
-        if kind == b"PLTE":
-            plte = body
-        elif kind == b"tRNS":
-            trns = body
-        elif kind == b"IEND":
-            break
-        pos += 12 + length
-    colours = []
-    for i in range(len(plte) // 3):
-        alpha = trns[i] if i < len(trns) else 255
-        if alpha < 128:
-            continue
-        colours.append("#%02x%02x%02x" % tuple(plte[i * 3:i * 3 + 3]))
-    return colours
-
-
-def collect_radar(site_dir: Path, meta: dict, now: datetime, radar_source, coords_source) -> dict:
-    """Download the latest radar frames and publish data/radar.json. Never fails the run."""
-    status = {"ok": False, "radars": []}
-    if radar_source is None:
-        return status
-    frames_dir = site_dir / "radar"
-    frames_dir.mkdir(parents=True, exist_ok=True)
-    maps = meta.setdefault("radarMaps", {})
-    manifest = {"generated": now.astimezone(bp.AEST).isoformat(), "radars": []}
-    keep: set[str] = set()
-    try:
-        with radar_source as rs:
-            names = rs.list()
-            for radar in RADARS:
-                rid = radar["id"]
-                frames = sorted(n for n in names if re.fullmatch(rf"{rid}\.T\.\d{{12}}\.png", n))[-RADAR_FRAMES:]
-                got = []
-                palette: list[str] = []
-                for name in frames:
-                    try:
-                        data = rs.get_bytes(name)
-                    except (OSError, EOFError, ftplib.Error) as exc:
-                        log(f"radar {name}: {exc}")
-                        continue
-                    (frames_dir / name).write_bytes(data)
-                    keep.add(name)
-                    stamp = datetime.strptime(name.split(".")[2], "%Y%m%d%H%M").replace(tzinfo=timezone.utc)
-                    got.append({"time": stamp.astimezone(bp.AEST).isoformat(), "url": f"radar/{name}"})
-                    palette = png_palette(data) or palette
-                entry = maps.get(rid, {})
-                if entry.get("sample"):  # re-read the saved file so parser improvements apply without refetching
-                    entry["bounds"] = parse_radar_map(entry["sample"])
-                checked = iso_to_min(entry.get("checked"))
-                if coords_source is not None and (entry.get("bounds") is None or checked is None
-                                                  or bp.epoch_minutes(now) - checked >= RADAR_MAP_REFRESH.total_seconds() / 60):
-                    try:
-                        with coords_source as cs:
-                            text = cs.get(f"{rid}.map")
-                        entry = {"checked": now.isoformat(), "bounds": parse_radar_map(text), "sample": text[:600]}
-                        maps[rid] = entry
-                        annotate("notice" if entry["bounds"] else "warning", f"Radar coordinates {rid}.map",
-                                 f"bounds {entry['bounds']}; file starts: {text[:400]}")
-                    except (OSError, EOFError, ftplib.Error) as exc:
-                        annotate("warning", f"Radar coordinates {rid}.map", str(exc))
-                manifest["radars"].append({
-                    "id": rid, "label": radar["label"], "site": radar["site"], "bounds": entry.get("bounds"),
-                    "frames": got, "palette": palette,
-                })
-                status["radars"].append({"id": rid, "frames": len(got), "bounds": entry.get("bounds") is not None})
-    except (OSError, EOFError, ftplib.Error) as exc:
-        annotate("warning", "Radar not updated", str(exc))
-        log(f"radar: {exc}")
-        return status
-    for old in frames_dir.glob("IDR*.png"):
-        if old.name not in keep:
-            old.unlink()
-    status["ok"] = any(r["frames"] and r["bounds"] for r in manifest["radars"])
-    write_json(site_dir / "data" / "radar.json", manifest)
-    annotate("notice", "Radar", "; ".join(f"{r['id']}: {r['frames']} frames, position {'known' if r['bounds'] else 'UNKNOWN'}"
-                                       for r in status["radars"]) or "no radar files listed")
-    return status
-
-
 def load_previous(base: str | None) -> tuple[dict, dict]:
     """Return (history series, meta) from the last published site, or empty ones."""
     if not base:
@@ -435,16 +301,20 @@ def sparkline(points: list[list], now_min: int, hours: int = 24, step: int = 30)
 # ---------------------------------------------------------------- the run
 
 def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_path: Path,
-        council_fetcher=fetch_council_locations, radar_source=None, coords_source=None) -> int:
+        council_fetcher=fetch_council_locations) -> int:
     now_min = bp.epoch_minutes(now)
     catalogue = json.loads(catalogue_path.read_text(encoding="utf-8"))
     series_prev, meta = load_previous(previous)
+    meta.pop("radarMaps", None)  # radar was removed
     meta_st: dict = meta.get("stations", {})
     status: dict = {}
 
-    stations: dict[str, dict] = {s["id"]: dict(s) for s in catalogue["stations"]}
-    groups: list[str] = list(catalogue["groups"])
-    bulletin_info = {"product": catalogue.get("bulletin", BULLETIN), "title": catalogue.get("title"), "issued": None}
+    catalogue_by_id: dict[str, dict] = {s["id"]: dict(s) for s in catalogue["stations"]}
+    catalogue_bulletins = {b["product"]: b for b in catalogue.get("bulletins", [])}
+    stations: dict[str, dict] = {}
+    groups: list[str] = []
+    bulletins_info: list[dict] = []
+    status["bulletins"] = {}
     reported: dict[str, dict] = {}  # BoM's own latest reading/class per station
     map_info: dict[str, dict] = {}
     table_info: dict[str, dict] = {}
@@ -457,32 +327,43 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         map_pages_listed = sorted(n for n in names if re.fullmatch(r"IDQ65\d{3}\.html", n))
         related = sorted(n for n in names if n.startswith(("IDQ6028", "IDQ6538")))[:12]
         annotate("notice", "BoM feed listing", (
-            f"{len(names)} files. {BULLETIN}.html: {'yes' if f'{BULLETIN}.html' in names else 'NO'}; "
+            f"{len(names)} files. " + "; ".join(f"{b}.html: {'yes' if f'{b}.html' in names else 'NO'}" for b in BULLETINS) + "; "
             f"IDQ65389.html: {'yes' if 'IDQ65389.html' in names else 'NO'}; "
             f"newest IDQ65911: {latest_named(names, 'IDQ65911') or 'none'}; newest IDQ65910: {latest_named(names, 'IDQ65910') or 'none'}; "
             f"QLD map pages: {len(map_pages_listed)}; related files: {', '.join(related) or 'none'}"))
 
-        # 1. bulletin -------------------------------------------------------
-        try:
-            if f"{BULLETIN}.html" not in names:
-                raise FileNotFoundError(f"{BULLETIN}.html not in feed listing")
-            bulletin = bp.parse_bulletin(src.get(f"{BULLETIN}.html"))
-            bulletin_info = {"product": bulletin["product"], "title": bulletin["title"], "issued": bulletin["issued"]}
-            fresh: dict[str, dict] = {}
-            for order, row in enumerate(bulletin["stations"]):
-                base = stations.get(row["id"], {})
-                fresh[row["id"]] = {**base, **{k: row[k] for k in ("id", "name", "waterway", "place", "group", "type", "datum", "product")},
-                                    "order": order}
-                reported[row["id"]] = row
-            stations = fresh  # the current bulletin decides which gauges exist
-            groups = [g["name"] for g in bulletin["groups"]]
-            status["bulletin"] = {"ok": True, "issued": bulletin["issued"], "stations": len(fresh),
-                                  "unresolved": bulletin["unresolved"]}
-            got_new_data = True
-        except (OSError, EOFError, ftplib.Error, bp.ParseError) as exc:
-            status["bulletin"] = {"ok": False, "error": str(exc)}
-            log(f"bulletin: {exc}")
-            annotate("warning", "Bulletin not used", str(exc))
+        # 1. bulletins ------------------------------------------------------
+        # Each current bulletin decides which of its gauges exist. If one can't be read, its gauges
+        # come from the bundled catalogue so the map keeps them.
+        for position, bid in enumerate(BULLETINS):
+            try:
+                if f"{bid}.html" not in names:
+                    raise FileNotFoundError(f"{bid}.html not in feed listing")
+                bulletin = bp.parse_bulletin(src.get(f"{bid}.html"))
+                added = 0
+                for row_no, row in enumerate(bulletin["stations"]):
+                    if row["id"] in stations:
+                        continue  # listed by an earlier bulletin
+                    base = catalogue_by_id.get(row["id"], {})
+                    stations[row["id"]] = {**base, **{k: row[k] for k in ("id", "name", "waterway", "place", "group", "type", "datum", "product")},
+                                           "bulletin": bid, "order": position * ORDER_BLOCK + row_no}
+                    reported[row["id"]] = row
+                    added += 1
+                groups += [g["name"] for g in bulletin["groups"] if g["name"] not in groups]
+                bulletins_info.append({"product": bid, "title": bulletin["title"], "issued": bulletin["issued"]})
+                status["bulletins"][bid] = {"ok": True, "issued": bulletin["issued"], "stations": added,
+                                            "unresolved": bulletin["unresolved"]}
+                got_new_data = True
+            except (OSError, EOFError, ftplib.Error, bp.ParseError) as exc:
+                status["bulletins"][bid] = {"ok": False, "error": str(exc)}
+                log(f"bulletin {bid}: {exc}")
+                annotate("warning", f"Bulletin {bid} not used", str(exc))
+                info = catalogue_bulletins.get(bid, {})
+                for st in catalogue["stations"]:
+                    if st.get("bulletin") == bid and st["id"] not in stations:
+                        stations[st["id"]] = dict(st)
+                groups += [g for g in info.get("groups", []) if g not in groups]
+                bulletins_info.append({"product": bid, "title": info.get("title"), "issued": None})
 
         wanted = set(stations)
 
@@ -745,7 +626,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         product = st.get("product") or STATION_PRODUCT
         out_stations.append({
             "id": sid, "name": st.get("name"), "waterway": st.get("waterway"), "place": st.get("place"),
-            "group": st.get("group"), "order": st.get("order"), "type": st.get("type"), "datum": st.get("datum"),
+            "group": st.get("group"), "bulletin": st.get("bulletin"), "order": st.get("order"), "type": st.get("type"), "datum": st.get("datum"),
             "lat": lat, "lon": lon, "coordSource": coord_src, "coordAccuracy": coord_acc,
             "height": height, "time": min_to_iso(obs_t) if obs_t is not None else None, "timeSource": obs_src,
             "floodClass": flood_class, "floodClassRaw": rep.get("floodClassRaw") or mp.get("floodClassRaw"),
@@ -768,11 +649,11 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
     meta["stations"] = meta_st
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    status["radar"] = collect_radar(out_dir.parent, meta, now, radar_source, coords_source)
     latest = {
         "generated": now.astimezone(bp.AEST).isoformat(),
         "demo": False,
-        "bulletin": bulletin_info,
+        "bulletin": bulletins_info[0] if bulletins_info else None,  # first bulletin (kept for older pages)
+        "bulletins": bulletins_info,
         "sources": status,
         "historyDays": HISTORY_DAYS,
         "groups": group_list,
@@ -796,7 +677,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
              f"{len(out_stations)} gauges ({', '.join(f'{k} {v}' for k, v in sorted(counts.items()))}); "
              f"{located} on the map ({surveyed} at council-surveyed positions, {rounded} only approximate), "
              f"{with_levels} with flood levels, {with_history} with 2+ readings of history. "
-             f"Bulletin {'OK' if status.get('bulletin', {}).get('ok') else 'missing'}, "
+             "Bulletins " + ", ".join(f"{b} {'OK' if st.get('ok') else 'missing'}" for b, st in status["bulletins"].items()) + ", "
              f"map page {'OK' if status.get('mapPages', {}).get('ok') else 'missing'}, "
              f"15-min readings {status.get('observations', {}).get('readings', 0)}, "
              f"history tables fetched {status.get('historyTables', {}).get('fetched', 0)}")
@@ -804,7 +685,8 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
         "## River heights update", "",
         f"Generated {latest['generated']}", "",
         "| Source | Result |", "|---|---|",
-        f"| Bulletin {BULLETIN} | {'issued ' + status['bulletin']['issued'] if status.get('bulletin', {}).get('ok') else status.get('bulletin', {}).get('error', 'n/a')} |",
+        *[f"| Bulletin {b} | {'issued ' + st['issued'] + ', ' + str(st['stations']) + ' gauges' if st.get('ok') else st.get('error', 'n/a')} |"
+          for b, st in status["bulletins"].items()],
         f"| Flood map pages | {status['mapPages']['gauges']} gauges from {', '.join(status['mapPages']['pages']) or 'none'} |",
         f"| 15-minute readings | {status['observations']['readings']} from {', '.join(status['observations']['files']) or 'none'} |",
         f"| History tables | {'offered' if status['historyTables']['available'] else 'not offered'}, {status['historyTables']['fetched']} fetched |",
@@ -837,14 +719,7 @@ def main(argv=None) -> int:
         if args.council_file:
             fixed = json.loads(Path(args.council_file).read_text(encoding="utf-8"))
             fetcher = lambda: (fixed, [])  # noqa: E731
-        if args.feed_dir:
-            radar_dir, coords_dir = Path(args.feed_dir) / "radar", Path(args.feed_dir) / "radar_coords"
-            radar_source = DirSource(str(radar_dir)) if radar_dir.is_dir() else None
-            coords_source = DirSource(str(coords_dir)) if coords_dir.is_dir() else None
-        else:
-            radar_source, coords_source = FtpSource(directory=RADAR_DIR), FtpSource(directory=RADAR_COORDS_DIR)
-        return run(source, args.previous, Path(args.out), now, Path(args.catalogue), council_fetcher=fetcher,
-                   radar_source=radar_source, coords_source=coords_source)
+        return run(source, args.previous, Path(args.out), now, Path(args.catalogue), council_fetcher=fetcher)
     except (OSError, EOFError, ftplib.Error) as exc:
         log(f"could not reach the BoM feed: {exc}")
         return 2

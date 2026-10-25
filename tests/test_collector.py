@@ -1,6 +1,6 @@
 """Tests for the SEQ River Watch collector.  Run:  python -m unittest discover -s tests
 
-fixtures/IDQ60286_2026-10-22.html and fixtures/IDQ65389.540111.tbl.shtml are real BoM
+fixtures/IDQ60286_*.html, IDQ60285_*.html, IDQ65325_*.html and IDQ65389.540111.tbl.shtml are real BoM
 pages (CC BY 4.0 AU). The flood-map page and HCS files below are synthetic, built in the
 documented formats, and exist only to exercise the code paths.
 """
@@ -21,6 +21,9 @@ import collect  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
 BULLETIN = (FIX / "IDQ60286_2026-10-22.html").read_text(encoding="utf-8")
+GOLD_COAST = (FIX / "IDQ60285_2026-10-26.html").read_text(encoding="utf-8")
+MAP_PAGE = (FIX / "IDQ65325_2026-10-26.html").read_text(encoding="utf-8", errors="replace")
+ALL_GAUGES = 336  # 233 in IDQ60286 + 103 in IDQ60285
 HISTORY = (FIX / "IDQ65389.540111.tbl.shtml").read_text(encoding="utf-8")
 AEST = timezone(timedelta(hours=10))
 
@@ -33,18 +36,6 @@ def hcs(rows):
         f'{i},"{kind}",1,"SR","{sid}","{t}",{"" if v is None else v},"{unit}","{datum}",,1,""\n'
         for i, (kind, sid, t, v, unit, datum) in enumerate(rows, 1))
     return head + body
-
-
-def tiny_png():
-    """A 1x1 indexed PNG: palette entry 0 transparent, 1 and 2 opaque (like BoM radar frames)."""
-    import struct
-    import zlib
-
-    def chunk(kind, body):
-        return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", zlib.crc32(kind + body) & 0xFFFFFFFF)
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 3, 0, 0, 0))
-            + chunk(b"PLTE", bytes([0, 0, 0, 245, 245, 255, 180, 180, 255])) + chunk(b"tRNS", bytes([0, 255, 255]))
-            + chunk(b"IDAT", zlib.compress(b"\x00\x01")) + chunk(b"IEND", b""))
 
 
 def map_page(entries):
@@ -96,6 +87,15 @@ class ParserTests(unittest.TestCase):
         last = h["readings"][-1]
         self.assertEqual(last[1], 31.66)
 
+    def test_real_map_page(self):
+        found = bp.parse_map_page(MAP_PAGE)
+        self.assertGreater(len(found), 500)
+        kg = found["540118"]  # Enoggera Creek at Kelvin Grove (Bancroft Park)
+        self.assertEqual(kg["levels"], {"minor": 5.2, "moderate": 5.9, "major": 6.7})
+        self.assertTrue(-28 < kg["lat"] < -27 and 152 < kg["lon"] < 154)
+        gold = bp.parse_bulletin(GOLD_COAST)
+        self.assertGreaterEqual(sum(1 for s in gold["stations"] if s["id"] in found), 90)
+
     def test_map_page_tokens(self):
         page = map_page([
             ("Kedron Brook at Mitchelton (Osborne Rd)", "540111", "-27.40", "152.97", "31.66", "Below Flood Level",
@@ -124,6 +124,7 @@ class CollectorRunTests(unittest.TestCase):
         self.feed = self.tmp / "feed"
         (self.feed / "IDQ65389").mkdir(parents=True)
         (self.feed / "IDQ60286.html").write_text(BULLETIN, encoding="utf-8")
+        (self.feed / "IDQ60285.html").write_text(GOLD_COAST, encoding="utf-8")
         (self.feed / "IDQ65389" / "IDQ65389.540111.tbl.shtml").write_text(HISTORY, encoding="utf-8")
         cat = json.loads((ROOT / "collector" / "stations.json").read_text(encoding="utf-8"))
         entries = []
@@ -156,8 +157,11 @@ class CollectorRunTests(unittest.TestCase):
         self.assertEqual(self.run_collector(), 0)
         latest = self.load("latest.json")
         self.assertEqual(latest["bulletin"]["issued"], "2026-10-22T10:24:00+10:00")
-        self.assertEqual(len(latest["stations"]), 233)
-        self.assertTrue(latest["sources"]["bulletin"]["ok"])
+        self.assertEqual(len(latest["stations"]), ALL_GAUGES)
+        self.assertTrue(latest["sources"]["bulletins"]["IDQ60286"]["ok"])
+        self.assertEqual(latest["sources"]["bulletins"]["IDQ60285"]["stations"], 103)
+        self.assertEqual([b["product"] for b in latest["bulletins"]], ["IDQ60286", "IDQ60285"])
+        self.assertEqual([g["name"] for g in latest["groups"]][4:6], ["Tingalpa Creek", "Stradbroke Islands"])
         self.assertEqual(latest["sources"]["observations"]["readings"], 4)
         st = {s["id"]: s for s in latest["stations"]}
         gp = st["540478"]
@@ -204,10 +208,12 @@ class CollectorRunTests(unittest.TestCase):
 
     def test_works_without_bulletin(self):
         (self.feed / "IDQ60286.html").unlink()
+        (self.feed / "IDQ60285.html").unlink()
         self.assertEqual(self.run_collector(), 0)
         latest = self.load("latest.json")
-        self.assertFalse(latest["sources"]["bulletin"]["ok"])
-        self.assertEqual(len(latest["stations"]), 233)  # bundled catalogue keeps the station list
+        self.assertFalse(latest["sources"]["bulletins"]["IDQ60286"]["ok"])
+        self.assertEqual(len(latest["stations"]), ALL_GAUGES)  # bundled catalogue keeps the station list
+        self.assertEqual(len(latest["groups"]), 10)
         self.assertEqual({s["id"]: s for s in latest["stations"]}["540478"]["height"], 10.2)
 
     def test_council_positions_win(self):
@@ -259,36 +265,24 @@ class CollectorRunTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual({s["id"]: s for s in self.load("latest.json")["stations"]}["540118"]["coordAccuracy"], "bom")
 
-    def test_radar_frames_published(self):
-        radar = self.feed / "radar"
-        coords = self.feed / "radar_coords"
-        radar.mkdir()
-        coords.mkdir()
-        png = tiny_png()
-        for stamp in ("202610220025", "202610220030", "202610220035"):
-            (radar / f"IDR662.T.{stamp}.png").write_bytes(png)
-        (radar / "IDR662.gif").write_bytes(b"GIF89a")
-        (coords / "IDR662.map").write_text("North: -25.4 South: -30.0\nEast: 155.8 West: 150.6\n")
+    def test_second_bulletin(self):
         self.assertEqual(self.run_collector(), 0)
-        manifest = json.loads((self.out.parent / "data" / "radar.json").read_text())
-        r = {x["id"]: x for x in manifest["radars"]}["IDR662"]
-        self.assertEqual(r["bounds"], [[-30.0, 150.6], [-25.4, 155.8]])
-        self.assertEqual([f["url"] for f in r["frames"]][-1], "radar/IDR662.T.202610220035.png")
-        self.assertEqual(r["frames"][-1]["time"], "2026-10-22T10:35:00+10:00")
-        self.assertEqual(r["palette"], ["#f5f5ff", "#b4b4ff"])
-        self.assertTrue((self.out.parent / "radar" / "IDR662.T.202610220035.png").is_file())
-        self.assertTrue(self.load("latest.json")["sources"]["radar"]["ok"])
+        latest = self.load("latest.json")
+        st = {s["id"]: s for s in latest["stations"]}
+        teviot = st["540713"]  # Teviot Brook at Harpers Crossing, at major flood on 26 Oct
+        self.assertEqual((teviot["bulletin"], teviot["group"], teviot["floodClass"]), ("IDQ60285", "Logan-Albert", "major"))
+        self.assertGreaterEqual(teviot["order"], 1000)
+        self.assertTrue(teviot["links"]["table"].endswith("/fwo/IDQ65388/IDQ65388.540713.tbl.shtml"))
+        self.assertLess(st["540111"]["order"], 1000)
 
-    def test_radar_map_formats(self):
-        self.assertEqual(collect.parse_radar_map("Top lat: -25.42 Bottom lat: -30.03 Left lon: 150.67 Right lon: 155.81"),
-                         [[-30.03, 150.67], [-25.42, 155.81]])
-        self.assertEqual(collect.parse_radar_map("IDR662\n150.6700 -25.4200\n155.8100 -30.0300\n"),
-                         [[-30.03, 150.67], [-25.42, 155.81]])
-        self.assertIsNone(collect.parse_radar_map("no coordinates here"))
-        bom = ("IDR503.map\n50 Marburg (128 km)\nprojection = Gnomonic\ncenter_longitude =     152.53900\n"
-               "center_latitude  =     -27.60800\nlon0 =     151.23309\nlat0 =     -28.74816\nlon1 =     151.26024\n"
-               "lat1 =     -26.44776\nlon2 =     153.82970\nlat2 =     -26.44766\nlon3 =     153.85709\nlat3 =     -28.74804\n")
-        self.assertEqual(collect.parse_radar_map(bom), [[-28.7481, 151.24667], [-26.44771, 153.84339]])
+    def test_one_bulletin_missing_uses_catalogue(self):
+        (self.feed / "IDQ60285.html").unlink()
+        self.assertEqual(self.run_collector(), 0)
+        latest = self.load("latest.json")
+        self.assertFalse(latest["sources"]["bulletins"]["IDQ60285"]["ok"])
+        st = {s["id"]: s for s in latest["stations"]}
+        self.assertEqual(st["540713"]["group"], "Logan-Albert")  # still listed, from the catalogue
+        self.assertIn("Nerang", [g["name"] for g in latest["groups"]])
 
     def test_over_real_ftp(self):
         try:
@@ -318,7 +312,7 @@ class CollectorRunTests(unittest.TestCase):
             self.assertEqual(code, 0)
             latest = self.load("latest.json")
             self.assertEqual(latest["sources"]["historyTables"]["fetched"], 1)
-            self.assertEqual(len(latest["stations"]), 233)
+            self.assertEqual(len(latest["stations"]), ALL_GAUGES)
         finally:
             server.close_all()
 

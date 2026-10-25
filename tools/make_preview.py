@@ -1,7 +1,7 @@
 """Build a single-file preview of the site with a real BoM snapshot embedded.
 
-The snapshot is the IDQ60286 bulletin issued 10:24 am AEST Thursday 22 October 2026
-plus one station's 7-day table (tests/fixtures). The page is marked as sample data.
+The snapshot is BoM's IDQ60286 and IDQ60285 bulletins and IDQ65325 flood-warning map page,
+captured at 7:44 am AEST Monday 26 October 2026 (tests/fixtures). The page is marked as sample data.
 
 Usage:
     python tools/make_preview.py <output.html> [--artifact] [--data-dir DIR]
@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+SNAPSHOT_TIME = "2026-10-26T07:45:00+10:00"  # the fixtures were captured from BoM's feed at 07:44 that morning
 sys.path.insert(0, str(ROOT / "collector"))
 import collect  # noqa: E402
 
@@ -28,13 +29,14 @@ def snapshot(demo: bool = True) -> tuple[dict, dict]:
     tmp = Path(tempfile.mkdtemp())
     try:
         feed = tmp / "feed"
-        (feed / "IDQ65389").mkdir(parents=True)
-        shutil.copy(ROOT / "tests/fixtures/IDQ60286_2026-10-22.html", feed / "IDQ60286.html")
-        shutil.copy(ROOT / "tests/fixtures/IDQ65389.540111.tbl.shtml", feed / "IDQ65389" / "IDQ65389.540111.tbl.shtml")
+        feed.mkdir(parents=True)
+        shutil.copy(ROOT / "tests/fixtures/IDQ60286_2026-10-26.html", feed / "IDQ60286.html")
+        shutil.copy(ROOT / "tests/fixtures/IDQ60285_2026-10-26.html", feed / "IDQ60285.html")
+        shutil.copy(ROOT / "tests/fixtures/IDQ65325_2026-10-26.html", feed / "IDQ65325.html")
         out = tmp / "out"
         council = json.loads((ROOT / "tests/fixtures/council_locations.json").read_text(encoding="utf-8"))
         code = collect.run(collect.DirSource(str(feed)), None, out,
-                           datetime.fromisoformat("2026-10-22T10:40:00+10:00"), ROOT / "collector/stations.json",
+                           datetime.fromisoformat(SNAPSHOT_TIME), ROOT / "collector/stations.json",
                            council_fetcher=lambda: (council, []))
         if code:
             raise SystemExit(f"collector failed with {code}")
@@ -43,7 +45,7 @@ def snapshot(demo: bool = True) -> tuple[dict, dict]:
     finally:
         shutil.rmtree(tmp)
     latest["demo"] = demo
-    latest["generated"] = "2026-10-22T10:40:00+10:00"
+    latest["generated"] = SNAPSHOT_TIME
     return latest, history
 
 

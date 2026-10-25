@@ -3,9 +3,11 @@
 
 Writes site/geo/catchments.json with two layers:
 
-* basins: the Queensland Government's drainage sub-basins for the rivers in the
-  IDQ60286 bulletin (Stanley, Lockyer, Bremer, Brisbane, North Pine, South Pine,
-  Caboolture), each with where it drains to.
+* basins: the Queensland Government's drainage sub-basins for the rivers in BoM's
+  IDQ60286 and IDQ60285 bulletins (Stanley, Lockyer, Bremer, Brisbane, North Pine,
+  South Pine, Caboolture, Logan, Albert, Coomera & Nerang, Stradbroke Islands), each
+  with its main river and where that river goes. Sub-basins also take in neighbouring
+  coastal creeks that reach the sea separately, so the route applies to the main river only.
 * creeks: Brisbane City Council's waterway catchments (58 creek catchments).
 
 Run by the "Refresh catchment boundaries" workflow (monthly or on demand), or by hand:
@@ -24,7 +26,7 @@ from datetime import datetime, timezone
 QLD_SUB_BASINS = (
     "https://spatial-gis.information.qld.gov.au/arcgis/rest/services/InlandWaters/DrainageBasins/MapServer/2/query?"
     + urllib.parse.urlencode({
-        "where": "sub_number IN ('1420','1421','1422','1430','1431','1432','1433')",
+        "where": "sub_number IN ('1420','1421','1422','1430','1431','1432','1433','1440','1450','1451','1460')",
         "outFields": "sub_name,sub_number", "outSR": "4326", "f": "geojson",
     })
 )
@@ -41,9 +43,14 @@ DRAINS_TO = {
     "1421": {"into": "Bramble Bay", "via": "through the Pine River, after meeting the South Pine River near Lawnton"},
     "1422": {"into": "Bramble Bay", "via": "through the Pine River, after meeting the North Pine River near Lawnton"},
     "1420": {"into": "Deception Bay", "via": "at the Caboolture River mouth"},
+    "1451": {"into": "Logan River", "via": "near Eagleby", "receivingRiver": "Logan River", "firstGauge": "Carbrook"},
+    "1450": {"into": "Moreton Bay", "via": "in its southern part"},
+    "1460": {},  # several rivers and creeks, each reaching the Broadwater or the ocean separately
+    "1440": {},  # island creeks
 }
 MAIN_RIVER = {"1433": "Stanley River", "1432": "Lockyer Creek", "1431": "Bremer River", "1430": "Brisbane River",
-              "1421": "North Pine River", "1422": "South Pine River", "1420": "Caboolture River"}
+              "1421": "North Pine River", "1422": "South Pine River", "1420": "Caboolture River",
+              "1451": "Albert River", "1450": "Logan River", "1460": None, "1440": None}
 
 
 def get_json(url: str):
@@ -121,7 +128,7 @@ def build() -> dict:
         offset += len(rows)
         if not rows or offset >= page.get("total_count", 0):
             break
-    if len(basins) < 7 or len(creeks) < 40:
+    if len(basins) < 10 or len(creeks) < 40:
         raise SystemExit(f"unexpected result: {len(basins)} basins, {len(creeks)} creek catchments - not writing")
     return {
         "fetched": datetime.now(timezone.utc).isoformat(timespec="seconds"),

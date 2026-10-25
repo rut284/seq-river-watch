@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SEQ River Watch</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Live river heights and flood classes for the Brisbane, Pine and Caboolture rivers and tributaries, from the Bureau of Meteorology.">
+<meta name="description" content="Live river heights and flood classes for the Brisbane, Pine, Caboolture, Logan–Albert and Gold Coast rivers and creeks, from the Bureau of Meteorology.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -390,18 +390,6 @@ ol.ds-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .ds-row:hover { background: var(--accent-wash); }
 .ds-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* radar overlay */
-.radar-ctl {
-  position: absolute; right: 12px; bottom: 28px; z-index: 500; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-  background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 6px 8px; box-shadow: var(--shadow);
-  max-width: calc(100% - 24px);
-}
-.radar-ctl input[type="range"] { width: 120px; accent-color: var(--accent); }
-.radar-time { font-size: 12.5px; color: var(--ink-2); min-width: 7ch; }
-.radar-ctl .tool { box-shadow: none; }
-.radar-ramp { display: flex; height: 10px; border-radius: 3px; overflow: hidden; }
-.radar-ramp span { flex: 1; }
-.radar-ramp-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); }
 
 @media (max-width: 860px) {
   body { display: block; height: auto; }
@@ -411,12 +399,6 @@ ol.ds-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
   .panel-head { position: static; }
   .summary { margin-left: 0; }
   .map-legend { bottom: 22px; left: 8px; font-size: 11.5px; }
-  .radar-ctl { left: 8px; right: 8px; bottom: 24px; flex-wrap: nowrap; gap: 6px; padding: 4px 6px; }
-  .radar-ctl input[type="range"] { flex: 1; min-width: 40px; width: auto; }
-  .radar-ctl select { max-width: 112px; font-size: 12px; padding: 4px; }
-  .radar-ctl .tool { padding: 4px 8px; font-size: 12.5px; }
-  .radar-time { font-size: 11.5px; min-width: 0; white-space: nowrap; }
-  .radar-ctl:not([hidden]) ~ .map-legend { bottom: 70px; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
@@ -425,7 +407,7 @@ ol.ds-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 <header class="top">
   <div class="brand">
     <h1><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="20" rx="1" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 6h3M9 10h4M9 14h3M9 18h4" stroke="var(--ink)" stroke-width="1.4"/><path d="M1 15c2.2-1.6 4.4-1.6 6.6 0s4.4 1.6 6.6 0 4.4-1.6 6.6 0 2 1.2 2.2 1.2" fill="none" stroke="var(--river)" stroke-width="2.2" stroke-linecap="round"/></svg>SEQ River Watch</h1>
-    <p>Brisbane, Pine and Caboolture rivers and tributaries</p>
+    <p>Brisbane, Pine, Caboolture, Logan–Albert and Gold Coast rivers and creeks</p>
   </div>
   <div class="summary" id="summary" aria-label="Gauges by flood class"></div>
   <div class="stamp" id="stamp"></div>
@@ -438,16 +420,9 @@ ol.ds-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     <div class="map-tools">
       <div class="seg basemaps" id="basemaps" role="group" aria-label="Map style" hidden></div>
       <button class="tool" id="catch-btn" type="button" aria-pressed="false" hidden>Catchments</button>
-      <button class="tool" id="radar-btn" type="button" aria-pressed="false" hidden>Radar</button>
       <button class="tool" id="fit" type="button">Fit gauges</button>
     </div>
     <p class="map-note" id="map-note" hidden></p>
-    <div class="radar-ctl" id="radar-ctl" hidden>
-      <button class="tool" id="radar-play" type="button" aria-pressed="false">Play</button>
-      <input id="radar-slider" type="range" min="0" max="0" step="1" value="0" aria-label="Radar time">
-      <span class="radar-time num" id="radar-time"></span>
-      <select class="select" id="radar-site" aria-label="Radar"></select>
-    </div>
     <details class="map-legend" id="legend-box" open><summary>Map key</summary><div class="legend-body" id="legend"></div></details>
   </div>
   <section class="panel" aria-label="River details">
@@ -503,7 +478,7 @@ const S = {
   selected: null, view: "rivers", area: "all", q: "", floodOnly: false,
   range: 72, map: null, markers: new Map(), labels: new Map(), chains: [], embedded: null,
   basemap: "outline", available: [], baseLayer: null, basemapBusy: false,
-  catch: null, catchOn: false, catchLayers: [], radarData: null, radarOn: false, radarId: null, radarIdx: 0, radarLayer: null, radarTimer: null,
+  catch: null, catchOn: false, catchLayers: [],
 };
 
 // ------------------------------------------------------------------ small svg helpers
@@ -600,6 +575,13 @@ function matches(st) {
   return true;
 }
 
+// "Latest River Heights for the QLD Gold Coast Rivers; Logan-Albert Rivers; ..." -> "Gold Coast, Logan-Albert ..."
+function shortTitle(b) {
+  const t = (b && b.title) || "";
+  const m = t.match(/for the QLD (.+?)(?: and tributaries)?$/i);
+  return m ? m[1].replace(/ Rivers?/g, "").replace(/;\s*/g, ", ").replace(/, ([^,]+)$/, " and $1") : (b && b.product) || "";
+}
+
 // ------------------------------------------------------------------ header
 function renderHeader() {
   const L = S.latest;
@@ -624,7 +606,7 @@ function renderHeader() {
 
   const banner = $("#banner");
   if (L.demo) {
-    banner.innerHTML = `<b>Sample data, not live.</b> Real BoM readings from the bulletin issued ${esc(fmtFull.format(new Date(L.bulletin.issued)))}. Once deployed, this page refreshes from BoM every 15 minutes and fills in flood levels and 7-day histories for every gauge.`;
+    banner.innerHTML = `<b>Sample data, not live.</b> Real BoM readings from the bulletins issued ${esc(fmtFull.format(new Date(L.bulletin.issued)))}. Once deployed, this page refreshes from BoM every 15 minutes and fills in flood levels and 7-day histories for every gauge.`;
     banner.hidden = false;
   } else if (stale) {
     banner.innerHTML = `<b>These heights may be out of date.</b> The last update was ${esc(ago(gen))}. BoM's feed or the scheduled update may be delayed. Check the <a href="https://www.bom.gov.au/qld/warnings/">BoM Queensland warnings</a> page.`;
@@ -647,8 +629,6 @@ function initMap() {
   map.createPane("chains"); map.getPane("chains").style.zIndex = 410;
   map.createPane("catchments"); map.getPane("catchments").style.zIndex = 340;
   map.getPane("catchments").style.pointerEvents = "none";
-  map.createPane("radar"); map.getPane("radar").style.zIndex = 380;
-  map.getPane("radar").style.pointerEvents = "none";
   map.createPane("labels"); map.getPane("labels").style.zIndex = 590;
   map.getPane("labels").style.pointerEvents = "none";
   const geo = S.geo;
@@ -914,8 +894,7 @@ function renderLegend() {
     <div class="row">${dot("below", "falling")}Falling</div>
     <div class="row">${dot("below")}Steady or not reported</div>
     ${S.basemap === "outline" ? '<hr><div class="row"><svg class="shape" viewBox="0 0 18 18" aria-hidden="true"><path d="M1 9h16" stroke="var(--chain)" stroke-width="2.5"/></svg>Gauges joined downstream</div>' : ""}
-    ${S.catchOn ? '<hr><div class="row"><span class="catch-key"></span>Catchment, shaded by its most serious gauge</div><div class="row"><span class="catch-key path"></span>Selected gauge\'s path to the bay</div>' : ""}
-    ${radarLegendHtml()}`;
+    ${S.catchOn ? '<hr><div class="row"><span class="catch-key"></span>Catchment, shaded by its most serious gauge</div><div class="row"><span class="catch-key path"></span>Selected gauge\'s path to the bay</div>' : ""}`;
 }
 
 // ------------------------------------------------------------------ catchments overlay
@@ -964,8 +943,15 @@ function assignCatchments() {
     f._worst = inside.reduce((a, s) => (CLASSES[clsKey(s)].rank > CLASSES[a].rank ? clsKey(s) : a), "none");
   });
 }
+// The drainage sub-basins group neighbouring catchments, so only a gauge on a sub-basin's main
+// river (e.g. Lockyer Creek in the Lockyer sub-basin) can be traced on to the next river. For
+// any other creek we say which sub-basin it is in and make no claim about its route.
+function onMainRiver(s) {
+  return !!(s && s._basin && s._basin.properties.mainRiver && s.waterway === s._basin.properties.mainRiver);
+}
 function basinChain(s) {
   const steps = [];
+  if (!onMainRiver(s)) return s && s._basin ? [s._basin] : [];
   let f = s && s._basin;
   const seen = new Set();
   while (f && !seen.has(f)) {
@@ -977,9 +963,11 @@ function basinChain(s) {
 }
 function downstreamOf(s) {
   const byOrder = (a, b) => a.order - b.order;
-  const out = S.latest.stations.filter((x) => x.waterway === s.waterway && x.order > s.order).sort(byOrder);
+  // Same creek name in the same area or sub-basin (several creeks share names, e.g. Sandy Creek).
+  const sameCreek = (x) => x.waterway === s.waterway && (x.group === s.group || (x._basin && x._basin === s._basin));
+  const out = S.latest.stations.filter((x) => sameCreek(x) && x.order > s.order).sort(byOrder);
   const b = s._basin?.properties;
-  if (b && b.receivingRiver && b.firstGauge && s.waterway === b.mainRiver) {
+  if (b && b.receivingRiver && b.firstGauge && onMainRiver(s)) {
     const recv = S.latest.stations.filter((x) => x.waterway === b.receivingRiver).sort(byOrder);
     const start = recv.findIndex((x) => (x.place || "").startsWith(b.firstGauge));
     if (start >= 0) out.push(...recv.slice(start));
@@ -1020,6 +1008,10 @@ function waterPathHtml(s) {
   const chain = basinChain(s);
   const steps = [];
   if (s._creek) steps.push(`<li><b>${esc(s._creek.properties.name)}</b> catchment</li>`);
+  if (!onMainRiver(s)) {
+    steps.push(`<li><b>${esc(s.waterway)}</b><span class="flow-via">in the ${esc(s._basin.properties.name)} drainage sub-basin</span></li>`);
+    chain.length = 0;
+  }
   chain.forEach((f, i) => {
     const p = f.properties;
     const verb = /Bay$/.test(p.into || "") ? "flows into" : "joins the";
@@ -1037,85 +1029,8 @@ function waterPathHtml(s) {
     <h3 class="section-title">Where this water goes</h3>
     <ol class="flow">${steps.join("")}</ol>
     ${down.length ? `<p class="g-sub" style="margin:10px 0 4px">Gauges downstream, in order:</p><ol class="ds-list">${rows}</ol>${down.length > shown.length ? `<p class="g-sub" style="margin:4px 0 0">and ${down.length - shown.length} more further down.</p>` : ""}`
-      : `<p class="g-sub" style="margin:8px 0 0">No gauges downstream of this one on ${esc(s.waterway)} in this bulletin.</p>`}
+      : `<p class="g-sub" style="margin:8px 0 0">No gauges downstream of this one on ${esc(s.waterway)} in BoM's bulletins.</p>`}
   </div>`;
-}
-
-// ------------------------------------------------------------------ radar overlay
-// BoM radar frames collected with the river heights (anonymous FTP /anon/gen/radar), positioned
-// with BoM's coordinates files. Plays the last ~40 minutes as a loop.
-function radarList() {
-  return (S.radarData?.radars || []).filter((r) => r.bounds && r.frames?.length);
-}
-function currentRadar() {
-  const list = radarList();
-  return list.find((r) => r.id === S.radarId) || list[0] || null;
-}
-function showRadarFrame() {
-  const r = currentRadar();
-  if (!S.radarOn || !r) { if (S.radarLayer) { S.map.removeLayer(S.radarLayer); S.radarLayer = null; } return; }
-  S.radarIdx = Math.max(0, Math.min(S.radarIdx ?? r.frames.length - 1, r.frames.length - 1));
-  const f = r.frames[S.radarIdx];
-  const bounds = L.latLngBounds(r.bounds);
-  if (!S.radarLayer) {
-    S.radarLayer = L.imageOverlay(f.url, bounds, { pane: "radar", className: "rw-radar", interactive: false, opacity: 0.8,
-      attribution: 'Radar: <a href="https://www.bom.gov.au/australia/radar/" target="_blank" rel="noopener">Bureau of Meteorology</a>' }).addTo(S.map);
-  } else { S.radarLayer.setUrl(f.url); S.radarLayer.setBounds(bounds); }
-  const mins = Math.round((nowMs() - Date.parse(f.time)) / 60000);
-  $("#radar-time").textContent = `${tFmt(f.time)}${mins > 30 ? ` (${mins} min old)` : ""}`;
-  $("#radar-slider").max = r.frames.length - 1;
-  $("#radar-slider").value = S.radarIdx;
-}
-function setRadarPlaying(on) {
-  clearInterval(S.radarTimer);
-  S.radarTimer = null;
-  $("#radar-play").setAttribute("aria-pressed", on);
-  $("#radar-play").textContent = on ? "Pause" : "Play";
-  if (!on) return;
-  const step = () => {
-    const r = currentRadar();
-    if (!r) return;
-    S.radarIdx = S.radarIdx >= r.frames.length - 1 ? 0 : S.radarIdx + 1;
-    showRadarFrame();
-  };
-  S.radarTimer = setInterval(step, matchMedia("(prefers-reduced-motion: reduce)").matches ? 1500 : 650);
-}
-function setRadar(on) {
-  S.radarOn = on;
-  $("#radar-btn").setAttribute("aria-pressed", on);
-  $("#radar-ctl").hidden = !on;
-  if (!on) setRadarPlaying(false);
-  else {
-    const r = currentRadar();
-    S.radarIdx = r ? r.frames.length - 1 : 0;
-    r?.frames.forEach((f) => { const im = new Image(); im.src = f.url; });  // preload the loop
-  }
-  showRadarFrame();
-  renderLegend();
-}
-function setupRadar() {
-  const list = radarList();
-  $("#radar-btn").hidden = !list.length;
-  const sel = $("#radar-site");
-  sel.innerHTML = list.map((r) => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join("");
-  sel.hidden = list.length < 2;
-  if (!list.some((r) => r.id === S.radarId)) S.radarId = list[0]?.id;
-  sel.value = S.radarId || "";
-  if (S.radarOn) showRadarFrame();
-}
-async function loadRadar() {
-  if (S.embedded) return;
-  try {
-    const r = await fetch(`data/radar.json?t=${Date.now()}`, { cache: "no-store" });
-    S.radarData = r.ok ? await r.json() : null;
-  } catch (e) { S.radarData = null; }
-  setupRadar();
-}
-function radarLegendHtml() {
-  const r = currentRadar();
-  if (!S.radarOn || !r?.palette?.length) return "";
-  const stops = r.palette.map((c) => `<span style="background:${c}"></span>`).join("");
-  return `<hr><div class="radar-ramp" aria-label="Radar rain intensity scale">${stops}</div><div class="radar-ramp-labels"><span>Light rain</span><span>Heavy</span></div>`;
 }
 
 // ------------------------------------------------------------------ rivers view
@@ -1454,11 +1369,13 @@ function renderAbout() {
   const L = S.latest;
   const src = L.sources || {};
   const st = (o) => (o == null ? "" : o.ok || o.available ? '<span class="src-ok">OK</span>' : '<span class="src-bad">unavailable</span>');
-  const srcRows = L.demo ? "" : `<p>Last update: bulletin ${st(src.bulletin)}${src.bulletin?.issued ? ` (issued ${esc(tFmt(src.bulletin.issued))})` : ""} · flood map ${st(src.mapPages)} · 15-minute readings ${st(src.observations)}.</p>`;
+  const bulls = L.bulletins || (L.bulletin ? [L.bulletin] : []);
+  const bullStatus = Object.entries(src.bulletins || {}).map(([id, b]) => `${esc(id)} ${st(b)}${b.issued ? ` (issued ${esc(tFmt(b.issued))})` : ""}`).join(" · ");
+  const srcRows = L.demo ? "" : `<p>Last update: ${bullStatus || "bulletins unavailable"} · flood map ${st(src.mapPages)} · 15-minute readings ${st(src.observations)}.</p>`;
   $("#about").innerHTML = `
     <h2>About this data</h2>
     <p><b>Not an official warning.</b> For flood warnings, see <a href="https://www.bom.gov.au/qld/warnings/" target="_blank" rel="noopener">BoM Queensland warnings</a>. For SES help call 132 500. In a life-threatening emergency call 000.</p>
-    <p>Heights come from the Bureau of Meteorology's river height bulletin ${esc(L.bulletin?.product || "IDQ60286")} and its public data feed, refreshed about every 15 minutes. Most gauges are run by other agencies and report to BoM in real time; readings are not quality-checked and can be missing or wrong.</p>
+    <p>Heights come from the Bureau of Meteorology's river height bulletins ${bulls.map((b) => `${esc(b.product)} (${esc(shortTitle(b))})`).join(" and ") || "IDQ60286 and IDQ60285"} and its public data feed, refreshed about every 15 minutes. Most gauges are run by other agencies and report to BoM in real time; readings are not quality-checked and can be missing or wrong.</p>
     ${srcRows}
     <dl>
       <dt><span class="swatch sw-minor"></span>Minor</dt><dd>Low-lying land next to the waterway goes under; minor roads and low bridges may close.</dd>
@@ -1519,7 +1436,12 @@ function index() {
   S.byId = new Map(S.latest.stations.map((s) => [s.id, s]));
   const sel = $("#area");
   const current = S.area;
-  sel.innerHTML = `<option value="all">All areas</option>` + S.latest.groups.map((g) => `<option value="${esc(g.name)}">${esc(g.name)}</option>`).join("");
+  const bulls = S.latest.bulletins || [];
+  const groupBulletin = (g) => S.byId.get(g.stations[0])?.bulletin;
+  const opt = (g) => `<option value="${esc(g.name)}">${esc(g.name)}</option>`;
+  sel.innerHTML = `<option value="all">All areas</option>` + (bulls.length > 1
+    ? bulls.map((b) => `<optgroup label="${esc(shortTitle(b))}">${S.latest.groups.filter((g) => groupBulletin(g) === b.product).map(opt).join("")}</optgroup>`).join("")
+    : S.latest.groups.map(opt).join(""));
   sel.value = S.latest.groups.some((g) => g.name === current) ? current : "all";
   S.area = sel.value;
 }
@@ -1540,7 +1462,6 @@ async function refresh() {
     S.latest = await loadLatest();
     S.historyLoading = null;
     renderAll();
-    loadRadar();
   } catch (e) { /* keep showing the last good data; the timestamp shows its age */ }
 }
 
@@ -1570,11 +1491,6 @@ async function boot() {
     $("#catch-btn").setAttribute("aria-pressed", S.catchOn);
     $("#catch-btn").addEventListener("click", () => setCatchments(!S.catchOn));
   }
-  $("#radar-btn").addEventListener("click", () => setRadar(!S.radarOn));
-  $("#radar-play").addEventListener("click", () => setRadarPlaying(!S.radarTimer));
-  $("#radar-slider").addEventListener("input", (e) => { setRadarPlaying(false); S.radarIdx = +e.target.value; showRadarFrame(); });
-  $("#radar-site").addEventListener("change", (e) => { S.radarId = e.target.value; const r = currentRadar(); S.radarIdx = r ? r.frames.length - 1 : 0; showRadarFrame(); renderLegend(); });
-  loadRadar();
   $("#q").addEventListener("input", (e) => { S.q = lower(e.target.value.trim()); applyFilters(); });
   $("#area").addEventListener("change", (e) => { S.area = e.target.value; applyFilters(); fitVisible(); });
   $("#tab-rivers").addEventListener("click", () => showView("rivers"));
