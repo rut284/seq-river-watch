@@ -35,7 +35,7 @@ You need a free GitHub account. Everything below happens in your web browser.
 
 5. **Open your site** at `https://<your-github-username>.github.io/seq-river-watch/`. The address is also shown on the finished workflow run and under **Settings → Pages**.
 
-From then on it refreshes itself about every 15 minutes, and the page reloads its data every 5 minutes while open. The 7-day hydrographs fill in as readings accumulate.
+From then on it refreshes itself about every 15 minutes (each run starts the next one, because GitHub's own schedule proved unreliable, running only about every 4 hours), and the page reloads its data every 5 minutes while open. The 7-day hydrographs fill in as readings accumulate.
 
 ### If something goes wrong
 
@@ -44,6 +44,8 @@ From then on it refreshes itself about every 15 minutes, and the page reloads it
 | A workflow run failed at *Collect river heights from BoM* | BoM's feed couldn't be reached or returned nothing new. The site keeps its last good data and the next run tries again. Open the run's log to see which file failed. |
 | A run failed at *configure-pages* | GitHub Pages isn't turned on yet: do step 3. |
 | Yellow "may be out of date" banner on the site | No successful update in the last hour. Check the Actions tab. |
+| Some runs in the Actions list show as *cancelled* | Normal. Only one update runs at a time, and a spare queued run is cancelled. |
+| The site is more than an hour old | The 15-minute chain stopped (for example, a run was cancelled by hand). The schedule restarts it within a few hours, or start it now: **Actions → Update river heights → Run workflow**. |
 | Updates stopped after a couple of months | GitHub pauses schedules in repositories with no commits for 60 days. `keepalive.yml` prevents this; if it happened anyway, open **Actions → Update river heights** and click **Enable workflow**. |
 | Gauge shows no flood levels | BoM hasn't published levels for that gauge (common for small creeks and storages). |
 
