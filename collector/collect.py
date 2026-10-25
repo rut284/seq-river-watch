@@ -339,15 +339,20 @@ UNUSUAL_WITHIN_MIN = 360  # ...less than 6 hours apart is flagged for the reader
 
 
 def unusual_jump(points: list[list]) -> dict | None:
-    """Flag a latest reading that jumped implausibly from the one before (often a gauge fault).
+    """Flag a gauge whose readings stepped implausibly in the last 24 hours (often a gauge fault).
 
-    The reading is still shown and used as reported; the page just says to check it.
+    Looks for the most recent pair of consecutive readings less than 6 hours apart that differ by
+    5 m or more. The readings are still shown and used as reported; the page just says to check.
     """
     if len(points) < 2:
         return None
-    (t0, v0), (t1, v1) = points[-2], points[-1]
-    if abs(v1 - v0) >= UNUSUAL_JUMP_M and t1 - t0 <= UNUSUAL_WITHIN_MIN:
-        return {"change": round(v1 - v0, 2), "from": v0, "fromTime": min_to_iso(t0)}
+    newest = points[-1][0]
+    for i in range(len(points) - 1, 0, -1):
+        (t0, v0), (t1, v1) = points[i - 1], points[i]
+        if newest - t1 > 24 * 60:
+            break
+        if abs(v1 - v0) >= UNUSUAL_JUMP_M and t1 - t0 <= UNUSUAL_WITHIN_MIN:
+            return {"change": round(v1 - v0, 2), "from": v0, "fromTime": min_to_iso(t0), "to": v1, "toTime": min_to_iso(t1)}
     return None
 
 

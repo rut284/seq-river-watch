@@ -1176,7 +1176,8 @@ function matchesPlace(s) {
 function unusualNote(s) {
   const u = s.unusual;
   if (!u) return "";
-  return `<p class="unusual"><b>Unusual reading.</b> ${u.change > 0 ? "Up" : "Down"} ${Math.abs(u.change).toFixed(2)} m since ${esc(tFmt(u.fromTime))} (${u.from.toFixed(2)} m). BoM's data isn't quality-checked, so this may be a gauge fault. Check <a href="${esc(s.links?.plot)}" target="_blank" rel="noopener">BoM's plot</a> before relying on it.</p>`;
+  const when = u.toTime ? ` between ${esc(tFmt(u.fromTime))} and ${esc(tFmt(u.toTime))}` : ` since ${esc(tFmt(u.fromTime))}`;
+  return `<p class="unusual"><b>Unusual readings.</b> The level ${u.change > 0 ? "jumped" : "dropped"} ${Math.abs(u.change).toFixed(2)} m${when} (from ${u.from.toFixed(2)} m). BoM's data isn't quality-checked, so this may be a gauge fault. Check <a href="${esc(s.links?.plot)}" target="_blank" rel="noopener">BoM's plot</a> before relying on it.</p>`;
 }
 function crossRow({ s, c, cs }) {
   return `<li><button type="button" class="cx-row ${cs.state}" data-id="${esc(s.id)}">
