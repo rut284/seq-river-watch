@@ -398,6 +398,9 @@ ol.ds-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .cx-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 .cx-tag.over { background: var(--ink); color: var(--panel); }
 .cx-tag.near { border: 1px solid var(--ink-2); color: var(--ink); }
+.cx-tag.check { border: 1px dashed var(--ink-3); color: var(--ink-2); font-weight: 500; }
+.unusual { margin: 0; padding: 7px 10px; border-radius: 6px; background: var(--banner); color: var(--banner-ink); font-size: 13px; max-width: 48ch; }
+.unusual a { color: inherit; }
 .cx-facts { display: grid; gap: 3px; }
 .cx-fact { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .levels tr.cx td:first-child { color: var(--ink); }
@@ -855,7 +858,7 @@ function renderLabels() {
     S.labels.clear();
     crossingLabels().forEach(({ s, c, cs }) => {
       const size = markerSize(s, s.id === S.selected);
-      const html = `<span class="rw-label-in cx-${cs.state}">${crossIcon(c.kind)}<b class="num">${fmtDiff(cs.diff)} m</b> ${esc(crossName(c))}, ${esc(s.place || s.name)}</span>`;
+      const html = `<span class="rw-label-in cx-${cs.state}">${crossIcon(c.kind)}<b class="num">${fmtDiff(cs.diff)} m</b> ${esc(crossName(c))}, ${esc(s.place || s.name)}${s.unusual ? " (check)" : ""}</span>`;
       const icon = L.divIcon({ className: `rw-label cxl ${cs.state === "over" ? "r-major" : "r-minor"}`, html, iconSize: null, iconAnchor: [-(size / 2 + 5), 12] });
       const lab = L.marker([s.lat, s.lon], { icon, pane: "labels", interactive: false, keyboard: false }).addTo(S.map);
       lab._id = s.id; lab._rank = cs.state === "over" ? 5 + cs.diff : 1;
@@ -1170,10 +1173,15 @@ function matchesPlace(s) {
   }
   return true;
 }
+function unusualNote(s) {
+  const u = s.unusual;
+  if (!u) return "";
+  return `<p class="unusual"><b>Unusual reading.</b> ${u.change > 0 ? "Up" : "Down"} ${Math.abs(u.change).toFixed(2)} m since ${esc(tFmt(u.fromTime))} (${u.from.toFixed(2)} m). BoM's data isn't quality-checked, so this may be a gauge fault. Check <a href="${esc(s.links?.plot)}" target="_blank" rel="noopener">BoM's plot</a> before relying on it.</p>`;
+}
 function crossRow({ s, c, cs }) {
   return `<li><button type="button" class="cx-row ${cs.state}" data-id="${esc(s.id)}">
     <span class="cx-ic">${crossIcon(c.kind)}</span>
-    <span class="cx-main"><b>${esc(crossName(c))}</b> at ${esc(s.place || s.name)}<span class="cx-sub">${esc(s.waterway)} · ${esc(s.group)}${s.time ? ` · ${esc(tFmt(s.time))}` : ""}</span></span>
+    <span class="cx-main"><b>${esc(crossName(c))}</b> at ${esc(s.place || s.name)}${s.unusual ? ' <span class="cx-tag check">Unusual reading</span>' : ""}<span class="cx-sub">${esc(s.waterway)} · ${esc(s.group)}${s.time ? ` · ${esc(tFmt(s.time))}` : ""}</span></span>
     <span class="cx-val"><span class="num">${fmtDiff(cs.diff)} m</span>${arrowSvg(s.tendency, "cx-arrow")}</span>
   </button></li>`;
 }
@@ -1189,7 +1197,7 @@ function renderCrossings() {
   const total = list.filter((x) => x.c.kind === "road").length;
   view.innerHTML = `
     <div class="cx-intro">
-      <p class="cx-summary"><b>${roadOver.length}</b> of ${total} gauged bridges, roads and causeways ${roadOver.length === 1 ? "is" : "are"} under water${roadNear.length ? `, and <b>${roadNear.length}</b> ${roadNear.length === 1 ? "is" : "are"} within ${NEAR_M} m` : ""}.</p>
+      <p class="cx-summary"><b>${roadOver.length}</b> of ${total} gauged bridges, roads and causeways ${roadOver.length === 1 ? "is" : "are"} under water${roadNear.length ? `, and <b>${roadNear.length}</b> ${roadNear.length === 1 ? "is" : "are"} within ${NEAR_M} m` : ""}.${(() => { const n = roadOver.filter((x) => x.s.unusual).length; return n ? ` ${n} of these ${n === 1 ? "is" : "are"} based on an unusual reading worth checking.` : ""; })()}</p>
       <p class="g-sub">These are the crossings at BoM gauges, with each level worked out from BoM's bulletins and compared with the latest reading. They're a guide only: other roads flood too, and a crossing can be unsafe before the water reaches it. Check road closures on <a href="https://qldtraffic.qld.gov.au/" target="_blank" rel="noopener">QLDTraffic</a> (13 19 40). Never drive through floodwater.</p>
     </div>
     ${roadOver.length ? section("Under water", roadOver) : `<p class="empty">No gauged crossings ${S.area !== "all" || S.q ? "in this selection " : ""}are under water at the latest readings.</p>`}
@@ -1371,6 +1379,7 @@ function renderGauge() {
       <div class="g-figures">
         <div class="hero"><span class="v">${fmtH(s.height)}</span><span class="u">m ${esc(s.datum || "")}</span></div>
         <div>${pill(key)}</div>
+        ${unusualNote(s)}
         <dl class="facts">
           <dt>Reading</dt><dd>${esc(tFmt(s.time))}${s.time ? ` · ${esc(ago(s.time))}` : ""}</dd>
           <dt>Tendency</dt><dd><span class="tend">${s.tendency ? `<svg viewBox="0 0 12 12" fill="var(--ink-2)">${tendencyPath(s.tendency)}</svg>${esc(s.tendency)}${tendNote}` : "Not reported"}</span></dd>
@@ -1456,12 +1465,12 @@ function drawHydro() {
   thr.forEach(([k, v], i) => {
     if (i === 0 || v <= hi + span0 * 1.5 || v <= Math.max(hi, lv.minor ?? hi) + 0.5) inView.push([k, v]); else offView.push([k, v]);
   });
-  // Crossing levels (bridges, roads, spillways): drawn when within reach of the data, otherwise listed.
-  const dataLo = lo, dataHi = hi;
+  inView.forEach(([, v]) => { lo = Math.min(lo, v); hi = Math.max(hi, v); });
+  // Crossing levels (bridges, roads, spillways): drawn when inside or near the chart's range, otherwise listed.
+  const reach = Math.max((hi - lo) * 0.5, 1);
   (s.crossings || []).filter((c) => c.kind !== "tide").forEach((c) => {
-    const k = `cx-${c.kind}`, label = crossName(c);
-    const near = c.level <= dataHi + Math.max(span0 * 1.5, 1) && c.level >= dataLo - Math.max(span0 * 1.5, 1);
-    (near ? inView : offView).push([k, c.level, label, c.level < dataLo ? "↓" : "↑"]);
+    const near = c.level <= hi + reach && c.level >= lo - reach;
+    (near ? inView : offView).push([`cx-${c.kind}`, c.level, crossName(c), c.level < lo ? "↓" : "↑"]);
   });
   inView.forEach(([, v]) => { lo = Math.min(lo, v); hi = Math.max(hi, v); });
   const refLabel = (k, v, label) => `${label || CLASSES[k].short} ${v.toFixed(2)}`;

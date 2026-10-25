@@ -334,6 +334,23 @@ def classify(height: float | None, levels: dict) -> str | None:
     return reached[-1] if reached else "below"
 
 
+UNUSUAL_JUMP_M = 5.0      # a change this big between consecutive readings...
+UNUSUAL_WITHIN_MIN = 360  # ...less than 6 hours apart is flagged for the reader to check
+
+
+def unusual_jump(points: list[list]) -> dict | None:
+    """Flag a latest reading that jumped implausibly from the one before (often a gauge fault).
+
+    The reading is still shown and used as reported; the page just says to check it.
+    """
+    if len(points) < 2:
+        return None
+    (t0, v0), (t1, v1) = points[-2], points[-1]
+    if abs(v1 - v0) >= UNUSUAL_JUMP_M and t1 - t0 <= UNUSUAL_WITHIN_MIN:
+        return {"change": round(v1 - v0, 2), "from": v0, "fromTime": min_to_iso(t0)}
+    return None
+
+
 def computed_tendency(points: list[list]) -> str | None:
     """Rising/falling/steady comparing the latest reading with the one nearest 1 hour earlier."""
     if len(points) < 2:
@@ -712,6 +729,7 @@ def run(source, previous: str | None, out_dir: Path, now: datetime, catalogue_pa
             "crossings": crossings,
             "levels": levels, "levelsSource": levels_src,
             "historyPoints": len(points),
+            "unusual": unusual_jump(points),
             "spark": sparkline(points, now_min),
             "links": {
                 "plot": f"{BOM_WEB}/fwo/{product}/{product}.{sid}.plt.shtml",

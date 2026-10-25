@@ -342,6 +342,13 @@ class CollectorRunTests(unittest.TestCase):
         st = {s["id"]: s for s in self.load("latest.json")["stations"]}
         self.assertEqual(st["540713"]["crossings"][0]["level"], 3.23)
 
+    def test_unusual_jump(self):
+        self.assertEqual(collect.unusual_jump([[100, 0.0], [248, 15.05]]),
+                         {"change": 15.05, "from": 0.0, "fromTime": collect.min_to_iso(100)})
+        self.assertIsNone(collect.unusual_jump([[100, 0.0], [248, 4.9]]))     # big but plausible
+        self.assertIsNone(collect.unusual_jump([[100, 0.0], [600, 15.0]]))    # readings far apart
+        self.assertIsNone(collect.unusual_jump([[100, 1.0]]))
+
     def test_crossing_kinds(self):
         kinds = {f: collect.crossing_kind(f) for f in
                  ("Bridge", "Road", "Causeway", "Crossing", "Approaches", "Spillway", "Full Supply", "Weir", "HAT", "Gauge board")}
